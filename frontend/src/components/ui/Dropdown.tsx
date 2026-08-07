@@ -73,7 +73,7 @@ export function MenuItem({
         danger ? 'text-red-600 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-50',
       )}
     >
-      {icon && <span className="text-slate-400 [.text-red-600_&]:text-red-500 [.text-red-600_&]:text-red-500">{icon}</span>}
+      {icon && <span className="text-slate-400">{icon}</span>}
       <span className="flex-1">{label}</span>
       {hint && <span className="text-xs text-slate-400">{hint}</span>}
     </button>
