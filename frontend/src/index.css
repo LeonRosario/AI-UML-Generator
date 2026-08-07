@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --border: 214 32% 91%;
+  --primary: 222 47% 11%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --accent: 231 74% 66%;
+  --accent-foreground: 0 0% 100%;
+  --ring: 231 74% 66%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+::selection {
+  background: hsl(231 74% 66% / 0.25);
+}
+
+/* ---- Scrollbars ---- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(215 20% 75%) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: hsl(215 20% 75%);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- React Flow theming ---- */
+.react-flow {
+  --xy-edge-stroke: hsl(222 47% 30% / 0.65);
+  --xy-edge-stroke-selected: hsl(231 74% 66%);
+  --xy-edge-stroke-width: 1.5;
+  --xy-edge-stroke-width-selected: 2;
+  --xy-handle-background-color-default: hsl(231 74% 66%);
+  --xy-handle-border-color-default: #fff;
+  --xy-handle-size: 10px;
+  background: transparent;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__controls {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+}
+.react-flow__controls-button {
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  width: 32px;
+  height: 32px;
+}
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
+.react-flow__controls-button:hover {
+  background: hsl(var(--muted));
+}
+
+.react-flow__minimap {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+  background: hsl(var(--card));
+}
+
+.react-flow__node.selected .uml-node {
+  box-shadow: 0 0 0 2px hsl(231 74% 66%);
+  border-color: hsl(231 74% 66%);
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(231 74% 66%);
+}
+
+.react-flow__edge-text {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  fill: hsl(222 47% 30%);
+}
+
+/* ---- Misc ---- */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, hsl(222 47% 11% / 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(222 47% 11% / 0.055) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+input[type='range'] {
+  accent-color: hsl(231 74% 66%);
+}
