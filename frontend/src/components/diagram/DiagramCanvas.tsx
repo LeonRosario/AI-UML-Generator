@@ -6,6 +6,7 @@ import {
   MarkerType,
   MiniMap,
   NodeToolbar,
+  Position,
   ReactFlow,
   applyEdgeChanges,
   applyNodeChanges,
@@ -16,7 +17,6 @@ import {
   type NodeChange,
   type NodeMouseHandler,
   type OnConnect,
-  type OnViewportChange,
   type Viewport,
 } from '@xyflow/react';
 import type { DiagramNode } from '@/types';
@@ -118,10 +118,7 @@ export function DiagramCanvas({
   );
 
   const handleConnect: OnConnect = useCallback(
-    (conn: Connection) => {
-      const id = `edge-${Date.now()}`;
-      onConnect?.({ ...conn, id });
-    },
+    (conn: Connection) => onConnect?.(conn),
     [onConnect],
   );
 
@@ -201,7 +198,7 @@ export function DiagramCanvas({
       proOptions={{ hideAttribution: true }}
       defaultEdgeOptions={defaultEdgeOptions}
     >
-      <Background variant={BackgroundVariant.Grid} gap={24} size={1} color="#e2e8f0" />
+      <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="#e2e8f0" />
       <MiniMap
         nodeColor={(n) => {
           switch ((n as DiagramNode).type) {
@@ -224,7 +221,7 @@ export function DiagramCanvas({
       <Controls showInteractive={false} />
 
       {selected.length === 1 && editing === selected[0].id && (
-        <NodeToolbar nodeId={selected[0].id} offset={10} isVisible position="top" className="!bg-transparent !shadow-none !p-0">
+        <NodeToolbar nodeId={selected[0].id} offset={10} isVisible position={Position.Top} className="!bg-transparent !shadow-none !p-0">
           <input
             ref={editInputRef}
             value={draft}
