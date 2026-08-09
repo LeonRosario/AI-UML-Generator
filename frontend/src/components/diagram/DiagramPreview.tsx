@@ -8,10 +8,12 @@ const WIDTH: Record<string, number> = {
   entityNode: 220,
   actorNode: 90,
   genericNode: 170,
+  default: 170,
 };
 
 function estimatedHeight(node: Diagram['nodes'][number]) {
-  switch (node.type) {
+  const t = node.type ?? 'default';
+  switch (t) {
     case 'classNode':
       return 58 + (node.data.attributes?.length ?? 0) * 16 + (node.data.methods?.length ?? 0) * 16;
     case 'entityNode':
@@ -31,6 +33,7 @@ const FILL: Record<string, string> = {
   entityNode: '#334155',
   actorNode: '#f1f5f9',
   genericNode: '#f8fafc',
+  default: '#f8fafc',
 };
 
 const STROKE: Record<string, string> = {
@@ -39,6 +42,7 @@ const STROKE: Record<string, string> = {
   entityNode: '#334155',
   actorNode: '#cbd5e1',
   genericNode: '#94a3b8',
+  default: '#94a3b8',
 };
 
 export function DiagramPreview({ diagram, className, empty = false }: { diagram?: Diagram; className?: string; empty?: boolean }) {
@@ -52,7 +56,7 @@ export function DiagramPreview({ diagram, className, empty = false }: { diagram?
     let maxX = -Infinity;
     let maxY = -Infinity;
     diagram.nodes.forEach((n) => {
-      const w = WIDTH[n.type] ?? 160;
+      const w = WIDTH[n.type ?? `default`] ?? 160;
       const h = estimatedHeight(n);
       minX = Math.min(minX, n.position.x - pad);
       minY = Math.min(minY, n.position.y - pad);
@@ -63,7 +67,7 @@ export function DiagramPreview({ diagram, className, empty = false }: { diagram?
     const vb = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
     const nodes = diagram.nodes.map((n) => {
-      const w = WIDTH[n.type] ?? 160;
+      const w = WIDTH[n.type ?? `default`] ?? 160;
       const h = estimatedHeight(n);
       return { ...n, w, h };
     });
@@ -122,19 +126,19 @@ export function DiagramPreview({ diagram, className, empty = false }: { diagram?
                   </text>
                 </g>
               ) : isEllipse ? (
-                <ellipse cx={x + n.w / 2} cy={y + n.h / 2} rx={n.w / 2} ry={n.h / 2} fill={FILL[n.type]} stroke={STROKE[n.type]} strokeWidth="1.2" />
+                <ellipse cx={x + n.w / 2} cy={y + n.h / 2} rx={n.w / 2} ry={n.h / 2} fill={FILL[n.type ?? `default`]} stroke={STROKE[n.type ?? `default`]} strokeWidth="1.2" />
               ) : isDecision ? (
                 <g>
-                  <rect x={x} y={y} width={n.w} height={n.h} rx={n.w / 2} transform={`rotate(45 ${x + n.w / 2} ${y + n.h / 2})`} fill={FILL[n.type]} stroke={STROKE[n.type]} strokeWidth="1.2" />
+                  <rect x={x} y={y} width={n.w} height={n.h} rx={n.w / 2} transform={`rotate(45 ${x + n.w / 2} ${y + n.h / 2})`} fill={FILL[n.type ?? `default`]} stroke={STROKE[n.type ?? `default`]} strokeWidth="1.2" />
                   <text x={x + n.w / 2} y={y + n.h / 2 + 3} textAnchor="middle" fontSize="8" fill="#334155">
                     {n.data.label}
                   </text>
                 </g>
               ) : (
                 <g>
-                  <rect x={x} y={y} width={n.w} height={n.h} fill="white" stroke={STROKE[n.type]} strokeWidth="1.2" rx={n.type === 'genericNode' ? 6 : 6} />
-                  <rect x={x} y={y} width={n.w} height="20" rx={6} fill={FILL[n.type]} />
-                  <rect x={x} y={y + 10} width={n.w} height="10" fill={FILL[n.type]} />
+                  <rect x={x} y={y} width={n.w} height={n.h} fill="white" stroke={STROKE[n.type ?? `default`]} strokeWidth="1.2" rx={n.type === 'genericNode' ? 6 : 6} />
+                  <rect x={x} y={y} width={n.w} height="20" rx={6} fill={FILL[n.type ?? `default`]} />
+                  <rect x={x} y={y + 10} width={n.w} height="10" fill={FILL[n.type ?? `default`]} />
                   <text x={x + n.w / 2} y={y + 13.5} textAnchor="middle" fontSize="8" fontWeight="700" fill="#f8fafc">
                     {n.data.label}
                   </text>
