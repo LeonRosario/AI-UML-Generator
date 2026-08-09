@@ -8,13 +8,13 @@ export function createNode(type: string, position: { x: number; y: number }, dat
   };
   switch (type) {
     case 'actorNode':
-      return { ...base, type, data: { label: 'Actor' } };
+      return { ...base, type, data: { label: 'Actor', type: 'use-case' } };
     case 'classNode':
-      return { ...base, type, data: { label: 'Class', attributes: ['id: int'], methods: ['method()'], ...data } };
+      return { ...base, type, data: { label: 'Class', type: 'class', attributes: ['id: int'], methods: ['method()'], ...data } };
     case 'useCaseNode':
-      return { ...base, type, data: { label: 'Use Case', ...data } };
+      return { ...base, type, data: { label: 'Use Case', type: 'use-case', ...data } };
     case 'entityNode':
-      return { ...base, type, data: { label: 'Table', fields: ['id: int (PK)'], ...data } };
+      return { ...base, type, data: { label: 'Table', type: 'er', fields: ['id: int (PK)'], ...data } };
     default:
       return { ...base, type: 'genericNode', data: { label: 'Step', type: 'activity', variant: 'step', ...data } };
   }
