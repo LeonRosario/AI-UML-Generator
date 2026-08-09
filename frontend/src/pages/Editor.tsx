@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { ReactFlowProvider, useReactFlow, type Edge, type Viewport } from '@xyflow/react';
+import { ReactFlowProvider, useReactFlow, type Connection, type Edge, type Viewport } from '@xyflow/react';
 import {
   Box,
   CheckSquare,
@@ -212,8 +212,8 @@ export function Editor() {
   );
 
   const onConnect = useCallback(
-    (conn: Edge) => {
-      commit({ nodes, edges: [...edges, conn] });
+    (conn: Connection) => {
+      commit({ nodes, edges: [...edges, { ...conn, id: `edge-${Date.now()}` }] });
     },
     [nodes, edges, commit],
   );
@@ -306,7 +306,7 @@ export function Editor() {
                 }}
                 className="flex cursor-grab items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-soft transition-all hover:border-indigo-300 hover:bg-indigo-50/50 hover:shadow-lift active:cursor-grabbing"
               >
-                <span className="h-4 w-4 text-slate-400">{p.icon}</span>
+                <span className="h-4 w-4 text-slate-400">{<p.icon className="h-4 w-4" />}</span>
                 {p.label}
               </div>
             ))}
@@ -451,7 +451,7 @@ function EditorFlow({
   edges: Diagram['edges'];
   setNodes: Dispatch<SetStateAction<Diagram['nodes']>>;
   setEdges: Dispatch<SetStateAction<Diagram['edges']>>;
-  onConnect: (conn: Edge) => void;
+  onConnect: (conn: Connection) => void;
   addNode: (type: string, pos: { x: number; y: number }) => void;
   editNode: (id: string, label: string) => void;
   onUndo: () => void;
@@ -462,7 +462,7 @@ function EditorFlow({
   onDragStop: () => void;
   onSave: () => void;
   arrowEdges: boolean;
-  canvasRef: RefObject<HTMLDivElement | null>;
+  canvasRef: RefObject<HTMLDivElement>;
   rightOpen: boolean;
 }) {
   const { fitView, zoomIn, zoomOut, screenToFlowPosition } = useReactFlow();

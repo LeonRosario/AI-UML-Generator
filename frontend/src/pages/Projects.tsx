@@ -12,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { PROJECTS, type Project } from '@/data/projects';
+import { PROJECTS } from '@/data/projects';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { DiagramPreview } from '@/components/diagram/DiagramPreview';
 import { Button } from '@/components/ui/Button';
@@ -23,7 +23,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { DIAGRAM_TYPE_LABELS, DIAGRAMS_BY_TYPE, uid } from '@/data/diagrams';
 import { cn } from '@/lib/cn';
-import type { DiagramType } from '@/types';
+import type { DiagramType, Project } from '@/types';
 
 const SORTS = ['Last edited', 'Name', 'Diagram count'] as const;
 
