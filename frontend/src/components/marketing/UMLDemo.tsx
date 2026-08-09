@@ -43,7 +43,7 @@ export function UMLDemo({ diagram, className, animate = false }: { diagram: Diag
         nodesConnectable={false}
         elementsSelectable
       >
-        <Background variant={BackgroundVariant.Grid} gap={24} size={1} color="#e8ecf2" />
+        <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="#e8ecf2" />
       </ReactFlow>
     </div>
   );
