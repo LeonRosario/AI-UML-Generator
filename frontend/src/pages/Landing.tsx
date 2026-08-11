@@ -17,6 +17,7 @@ import { Navbar } from '@/components/navbar/Navbar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { UMLDemo } from '@/components/marketing/UMLDemo';
+import { HowItWorks } from '@/components/ui/HowItWorks';
 import { USE_CASE, DIAGRAMS_BY_TYPE, DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
 import type { DiagramType } from '@/types';
 import { Logo } from '@/components/ui/Logo';
@@ -36,13 +37,6 @@ const features = [
   { icon: Zap, title: 'AI Editing', desc: 'Modify diagrams with natural-language commands. "Add an administrator actor."' },
   { icon: History, title: 'Version History', desc: 'Save and restore previous diagram versions with one click.' },
   { icon: FileType2, title: 'Export', desc: 'Export diagrams as PNG, SVG, and PDF for docs and presentations.' },
-];
-
-const steps = [
-  { n: '01', title: 'Describe', desc: 'Explain your software system in plain English.' },
-  { n: '02', title: 'Analyze', desc: 'AI identifies actors, classes, relationships, workflows, and interactions.' },
-  { n: '03', title: 'Generate', desc: 'UMLForge converts the structured data into an interactive UML diagram.' },
-  { n: '04', title: 'Refine', desc: 'Edit the diagram manually or modify it using AI.' },
 ];
 
 const diagramTabs: DiagramType[] = ['use-case', 'class', 'sequence', 'activity', 'er'];
@@ -155,32 +149,7 @@ export function Landing() {
       </section>
 
       {/* ---------- How It Works ---------- */}
-      <section id="how-it-works" className="border-y border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
-          <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">From description to diagram in seconds</h2>
-            <p className="mt-3 text-lg text-slate-500">Four steps. No UML syntax required.</p>
-          </motion.div>
-
-          <div className="relative mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="absolute left-0 right-0 top-[52px] hidden h-px bg-slate-200 lg:block" />
-            {steps.map((s, i) => (
-              <motion.div
-                key={s.n}
-                {...fadeUp}
-                transition={{ ...fadeUp.transition, delay: i * 0.07 }}
-                className="relative"
-              >
-                <div className="relative z-10 mb-5 flex h-9 w-9 items-center justify-center rounded-full border-2 border-slate-300 bg-white font-mono text-xs font-bold text-slate-600">
-                  {s.n}
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900">{s.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{s.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HowItWorks />
 
       {/* ---------- Diagram Types ---------- */}
       <DiagramTypes />
