@@ -22,6 +22,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        hand: ['Caveat', 'ui-script', 'Segoe Script', 'cursive'],
       },
       borderRadius: {
         xl: '0.75rem',
