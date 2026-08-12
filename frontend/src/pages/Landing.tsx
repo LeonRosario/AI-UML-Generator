@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { UMLDemo } from '@/components/marketing/UMLDemo';
 import { HowItWorks } from '@/components/ui/HowItWorks';
+import TextBlockAnimation from '@/components/ui/text-block-animation';
 import { USE_CASE, DIAGRAMS_BY_TYPE, DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
 import type { DiagramType } from '@/types';
 import { Logo } from '@/components/ui/Logo';
@@ -60,22 +61,18 @@ export function Landing() {
                 <Sparkles className="h-3 w-3" /> Powered by AI
               </Badge>
             </motion.div>
-            <motion.h1
-              {...fadeUp}
-              transition={{ ...fadeUp.transition, delay: 0.05 }}
-              className="text-balance text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]"
-            >
-              Turn Requirements Into{' '}
-              <span className="text-indigo-500">UML Diagrams</span> With AI
-            </motion.h1>
-            <motion.p
-              {...fadeUp}
-              transition={{ ...fadeUp.transition, delay: 0.1 }}
-              className="mt-5 max-w-lg text-lg leading-relaxed text-slate-500"
-            >
-              Describe your software system in plain English and let UMLForge automatically generate structured, editable
-              UML diagrams.
-            </motion.p>
+            <TextBlockAnimation blockColor="#6366f1" animateOnScroll={false} delay={0.2} duration={0.8}>
+              <h1 className="text-balance text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
+                Turn Requirements Into{' '}
+                <span className="text-indigo-500">UML Diagrams</span> With AI
+              </h1>
+            </TextBlockAnimation>
+            <TextBlockAnimation blockColor="#a78bfa" delay={0.3} duration={0.6} stagger={0.04}>
+              <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate-500">
+                Describe your software system in plain English and let UMLForge automatically generate structured,
+                editable UML diagrams.
+              </p>
+            </TextBlockAnimation>
             <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }} className="mt-8 flex flex-wrap gap-3">
               <Link to="/app/projects">
                 <Button size="lg">
@@ -124,12 +121,14 @@ export function Landing() {
 
       {/* ---------- Features ---------- */}
       <section id="features" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
-        <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Everything you need to model systems</h2>
+        <div className="mx-auto max-w-2xl text-center">
+          <TextBlockAnimation blockColor="#6366f1" stagger={0.06}>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Everything you need to model systems</h2>
+          </TextBlockAnimation>
           <p className="mt-3 text-lg text-slate-500">
             A complete diagramming workspace — from AI generation to polished exports.
           </p>
-        </motion.div>
+        </div>
         <div className="mt-14 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f, i) => (
             <motion.div
@@ -218,7 +217,9 @@ export function Landing() {
       <section className="border-t border-slate-200 bg-slate-900">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-14 sm:px-6 md:flex-row md:items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white">Start forging diagrams today</h2>
+            <TextBlockAnimation blockColor="#6366f1" duration={0.8} stagger={0.08}>
+              <h2 className="text-2xl font-bold text-white">Build Better Software Architecture.</h2>
+            </TextBlockAnimation>
             <p className="mt-1 text-slate-400">Free to start. No credit card required.</p>
           </div>
           <Link to="/app">
@@ -241,10 +242,12 @@ function DiagramTypes() {
   return (
     <section id="diagram-types" className="border-t border-slate-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
-        <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Every UML diagram you need</h2>
+        <div className="mx-auto max-w-2xl text-center">
+          <TextBlockAnimation blockColor="#0ea5e9" stagger={0.06}>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Every UML diagram you need</h2>
+          </TextBlockAnimation>
           <p className="mt-3 text-lg text-slate-500">Pick a type to preview a realistic generated example.</p>
-        </motion.div>
+        </div>
 
         <div className="mt-10 flex flex-wrap justify-center gap-2">
           {diagramTabs.map((t) => (
