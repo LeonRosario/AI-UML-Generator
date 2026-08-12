@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LazyMotion, domAnimation, motion } from 'motion/react';
 import { MapPin } from 'lucide-react';
+import TextBlockAnimation from '@/components/ui/text-block-animation';
 import { cn } from '@/lib/cn';
 
 export interface HowItWorksStep {
@@ -9,7 +10,10 @@ export interface HowItWorksStep {
   description: string;
   chip?: string;
   numberColor?: string;
+  blockColor?: string;
 }
+
+const STEP_BLOCK_COLORS = ['#6366f1', '#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b'];
 
 const DEFAULT_STEPS: HowItWorksStep[] = [
   {
@@ -110,16 +114,12 @@ export function HowItWorks({
       <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[720px] -translate-x-1/2 rounded-full bg-indigo-100/40 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as const }}
-          className="mx-auto max-w-2xl text-center"
-        >
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
+        <div className="mx-auto max-w-2xl text-center">
+          <TextBlockAnimation blockColor="#8b5cf6" stagger={0.06}>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
+          </TextBlockAnimation>
           <p className="mt-3 text-lg text-slate-500">{subtitle}</p>
-        </motion.div>
+        </div>
 
         <LazyMotion features={domAnimation} strict>
           <div ref={containerRef} className="relative mt-14 flex flex-col gap-10 md:mt-16 md:gap-14 lg:mt-20 lg:gap-20">
@@ -200,7 +200,13 @@ export function HowItWorks({
                           <MapPin className="h-4 w-4" />
                         </motion.span>
                       </div>
-                      <h3 className="mt-5 text-lg font-semibold tracking-tight text-slate-900">{step.title}</h3>
+                      <TextBlockAnimation
+                        blockColor={step.blockColor ?? STEP_BLOCK_COLORS[i % STEP_BLOCK_COLORS.length]}
+                        stagger={0.05}
+                        duration={0.5}
+                      >
+                        <h3 className="mt-5 text-lg font-semibold tracking-tight text-slate-900">{step.title}</h3>
+                      </TextBlockAnimation>
                       <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{step.description}</p>
                     </motion.div>
                   </div>
