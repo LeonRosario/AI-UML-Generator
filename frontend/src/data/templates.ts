@@ -1,6 +1,10 @@
 import type { Diagram, Template } from '@/types';
 import { actorNode, classNode, edge, entityNode, genericNode, useCaseNode } from './diagrams';
 
+function node(id: string, type: string, x: number, y: number, label: string, extra: Record<string, unknown> = {}): Diagram['nodes'][number] {
+  return { id, type, position: { x, y }, data: { label, type: 'state', ...extra } };
+}
+
 function build(nodes: Diagram['nodes'], edges: Diagram['edges'], type: Diagram['type'], name: string): Diagram {
   return { id: `t-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, name, type, nodes, edges, createdAt: '', updatedAt: '' };
 }
@@ -94,13 +98,16 @@ const auth: Diagram = build(
 
 export const TEMPLATE_CATEGORIES = [
   'All',
-  'Education',
-  'Healthcare',
   'E-Commerce',
   'Banking',
+  'Hospital',
+  'Library',
+  'Student Management',
+  'Food Delivery',
   'Social Media',
-  'Management',
   'Authentication',
+  'Online Shopping',
+  'Management',
 ] as const;
 
 export const TEMPLATES: Template[] = [
@@ -108,7 +115,7 @@ export const TEMPLATES: Template[] = [
     id: 'tpl-student',
     name: 'Student Management System',
     description: 'Classes, enrollments and assignments for a university portal.',
-    category: 'Education',
+    category: 'Student Management',
     diagramType: 'class',
     uses: 1284,
     diagram: studentMgmt,
@@ -117,7 +124,7 @@ export const TEMPLATES: Template[] = [
     id: 'tpl-hospital',
     name: 'Hospital Management System',
     description: 'Patients, doctors and appointments in a relational schema.',
-    category: 'Healthcare',
+    category: 'Hospital',
     diagramType: 'er',
     uses: 962,
     diagram: hospital,
@@ -126,7 +133,7 @@ export const TEMPLATES: Template[] = [
     id: 'tpl-shopping',
     name: 'Online Shopping System',
     description: 'Customers, checkout and catalog management as use cases.',
-    category: 'E-Commerce',
+    category: 'Online Shopping',
     diagramType: 'use-case',
     uses: 1431,
     diagram: shopping,
@@ -144,7 +151,7 @@ export const TEMPLATES: Template[] = [
     id: 'tpl-library',
     name: 'Library Management System',
     description: 'Borrowing, returns and fines for a public library.',
-    category: 'Management',
+    category: 'Library',
     diagramType: 'use-case',
     uses: 611,
     diagram: library,
@@ -153,7 +160,7 @@ export const TEMPLATES: Template[] = [
     id: 'tpl-food',
     name: 'Food Delivery System',
     description: 'Ordering and delivery flows between customers and drivers.',
-    category: 'E-Commerce',
+    category: 'Food Delivery',
     diagramType: 'use-case',
     uses: 887,
     diagram: food,
@@ -201,6 +208,115 @@ export const TEMPLATES: Template[] = [
       [edge('tp-1', 'tp-e', 'tp-p', '1..*'), edge('tp-2', 'tp-d', 'tp-e', '1..*')],
       'class',
       'Payroll',
+    ),
+  },
+  {
+    id: 'tpl-online-shop',
+    name: 'Online Shopping — Class',
+    description: 'Customer, cart, orders and payments modeled as classes.',
+    category: 'Online Shopping',
+    diagramType: 'class',
+    uses: 1219,
+    diagram: build(
+      [
+        classNode('tos-c', 0, 0, 'Customer', ['id: int', 'name: string', 'email: string', 'address: string'], ['login()', 'checkout()']),
+        classNode('tos-cart', 320, 0, 'Cart', ['id: int', 'items: List'], ['addItem()', 'removeItem()']),
+        classNode('tos-p', 320, 240, 'Product', ['id: int', 'name: string', 'price: decimal', 'stock: int'], ['getInventory()']),
+        classNode('tos-o', 640, 0, 'Order', ['id: int', 'status: string', 'total: decimal'], ['placeOrder()', 'cancel()']),
+        classNode('tos-oi', 640, 240, 'OrderItem', ['orderId: int', 'productId: int', 'qty: int'], []),
+        classNode('tos-pay', 960, 0, 'Payment', ['id: int', 'method: string', 'amount: decimal'], ['process()']),
+      ],
+      [
+        { ...edge('tos-1', 'tos-c', 'tos-cart', '1'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tos-2', 'tos-c', 'tos-o', 'places 1'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tos-3', 'tos-o', 'tos-oi', 'contains'), type: 'uml', data: { relationship: 'composition' } },
+        { ...edge('tos-4', 'tos-cart', 'tos-oi', ''), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tos-5', 'tos-p', 'tos-oi', '1..*'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tos-6', 'tos-o', 'tos-pay', '1'), type: 'uml', data: { relationship: 'aggregation' } },
+      ],
+      'class',
+      'Online Shopping',
+    ),
+  },
+  {
+    id: 'tpl-order-state',
+    name: 'Order Lifecycle — State',
+    description: 'Order states from draft to delivered with cancellation paths.',
+    category: 'E-Commerce',
+    diagramType: 'state',
+    uses: 618,
+    diagram: build(
+      [
+        node('tsd-1', 'circleNode', 170, 0, '', { fill: '#0f172a', width: 24, height: 24 }),
+        node('tsd-2', 'umlNode', 90, 110, 'Draft'),
+        node('tsd-3', 'umlNode', 330, 110, 'Paid'),
+        node('tsd-4', 'umlNode', 570, 110, 'Shipped'),
+        node('tsd-5', 'umlNode', 230, 250, 'Delivered'),
+        node('tsd-6', 'umlNode', 570, 260, 'Cancelled'),
+        node('tsd-7', 'circleNode', 240, 380, '', { fill: '#0f172a', width: 28, height: 28, borderColor: '#0f172a', borderWidth: 3 }),
+      ],
+      [
+        { ...edge('tste-1', 'tsd-1', 'tsd-2', ''), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tste-2', 'tsd-2', 'tsd-3', 'submit()'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tste-3', 'tsd-2', 'tsd-6', 'cancel()'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tste-4', 'tsd-3', 'tsd-4', 'dispatch()'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tste-5', 'tsd-4', 'tsd-5', 'deliver()'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tste-6', 'tsd-5', 'tsd-7', ''), type: 'uml', data: { relationship: 'association' } },
+      ],
+      'state',
+      'Order Lifecycle',
+    ),
+  },
+  {
+    id: 'tpl-payment',
+    name: 'Payment Platform — Component',
+    description: 'Web, mobile and gateway components around payment services.',
+    category: 'E-Commerce',
+    diagramType: 'component',
+    uses: 487,
+    diagram: build(
+      [
+        node('componentNode', 0, 0, 'Web App', { type: 'component' }),
+        node('componentNode', 340, 0, 'Mobile App', { type: 'component' }),
+        node('componentNode', 170, 180, 'API Gateway', { type: 'component' }),
+        node('componentNode', 0, 360, 'Auth Service', { type: 'component' }),
+        node('componentNode', 340, 360, 'Payment Service', { type: 'component' }),
+        node('databaseNode', 620, 200, 'Accounts DB', { type: 'component', fields: ['account', 'transaction'] }),
+      ],
+      [
+        { ...edge('tpm-1', 'tp-1', 'tp-3', ''), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tpm-2', 'tp-2', 'tp-3', ''), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('tpm-3', 'tp-3', 'tp-4', ''), type: 'uml', data: { relationship: 'dependency' } },
+        { ...edge('tpm-4', 'tp-3', 'tp-5', ''), type: 'uml', data: { relationship: 'dependency' } },
+        { ...edge('tpm-5', 'tp-5', 'tp-6', ''), type: 'uml', data: { relationship: 'association' } },
+      ],
+      'component',
+      'Payment Platform',
+    ),
+  },
+  {
+    id: 'tpl-deploy',
+    name: 'Cloud Platform — Deployment',
+    description: 'Physical nodes for a cloud-hosted order platform.',
+    category: 'Management',
+    diagramType: 'deployment',
+    uses: 356,
+    diagram: build(
+      [
+        node('tdp-1', 'umlNode', 0, 0, 'Client Browser', { type: 'deployment', stereotype: 'device' }),
+        node('tdp-2', 'umlNode', 320, 0, 'App Server', { type: 'deployment', stereotype: 'server' }),
+        node('tdp-3', 'umlNode', 320, 200, 'Web Server', { type: 'deployment', stereotype: 'server' }),
+        node('tdp-4', 'databaseNode', 620, 200, 'PostgreSQL', { type: 'deployment', fields: [] }),
+        node('tdp-5', 'umlNode', 620, 0, 'Message Queue', { type: 'deployment', stereotype: 'service' }),
+      ],
+      [
+        { ...edge('td-1', 'tdp-1', 'tdp-3', 'HTTPS'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('td-2', 'tdp-3', 'tdp-2', 'REST'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('td-3', 'tdp-2', 'tdp-4', 'SQL'), type: 'uml', data: { relationship: 'association' } },
+        { ...edge('td-4', 'tdp-2', 'tdp-5', 'AMQP'), type: 'uml', data: { relationship: 'association' } },
+      ],
+      'deployment',
+      'Cloud Platform',
     ),
   },
 ];
