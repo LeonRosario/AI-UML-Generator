@@ -1,14 +1,30 @@
 import type { Edge, Node } from '@xyflow/react';
 
-export type DiagramType = 'use-case' | 'class' | 'sequence' | 'activity' | 'er';
+export type DiagramType =
+  | 'use-case'
+  | 'class'
+  | 'sequence'
+  | 'activity'
+  | 'er'
+  | 'state'
+  | 'component'
+  | 'deployment';
 
 export type DiagramNodeData = {
   label: string;
   type: DiagramType;
+  nodeType?: string;
   attributes?: string[];
   methods?: string[];
   fields?: string[];
   stereotype?: string;
+  note?: string;
+  imageSrc?: string;
+  fill?: string;
+  borderColor?: string;
+  textColor?: string;
+  borderWidth?: number;
+  radius?: number;
   [key: string]: unknown;
 };
 
@@ -22,6 +38,7 @@ export type Diagram = {
   edges: Edge[];
   createdAt: string;
   updatedAt: string;
+  ownerId?: string;
 };
 
 export type Project = {
