@@ -188,12 +188,96 @@ export const ER: Diagram = {
   ],
 };
 
+/* ------------------------------------------------------------------ */
+/*  State diagram — order lifecycle                                    */
+/* ------------------------------------------------------------------ */
+
+export const STATE: Diagram = {
+  id: 'diag-state',
+  name: 'Order Lifecycle — State',
+  type: 'state',
+  createdAt: '2026-07-28T10:00:00Z',
+  updatedAt: '2026-08-06T12:00:00Z',
+  nodes: [
+    { id: 'st-start', type: 'circleNode', position: { x: 190, y: 0 }, data: { label: '', type: 'state', nodeType: 'circle', width: 24, height: 24, fill: '#0f172a' } },
+    { id: 'st-draft', type: 'umlNode', position: { x: 120, y: 90 }, data: { label: 'Draft', type: 'state' } },
+    { id: 'st-paid', type: 'umlNode', position: { x: 350, y: 90 }, data: { label: 'Paid', type: 'state' } },
+    { id: 'st-ship', type: 'umlNode', position: { x: 580, y: 90 }, data: { label: 'Shipped', type: 'state' } },
+    { id: 'st-del', type: 'umlNode', position: { x: 240, y: 220 }, data: { label: 'Delivered', type: 'state' } },
+    { id: 'st-cancel', type: 'umlNode', position: { x: 580, y: 230 }, data: { label: 'Cancelled', type: 'state' } },
+    { id: 'st-end', type: 'circleNode', position: { x: 250, y: 340 }, data: { label: '', type: 'state', nodeType: 'circle', width: 28, height: 28, fill: '#0f172a', borderColor: '#0f172a', borderWidth: 3 } },
+  ],
+  edges: [
+    edge('ste-1', 'st-start', 'st-draft'),
+    edge('ste-2', 'st-draft', 'st-paid', 'submit()'),
+    edge('ste-3', 'st-draft', 'st-cancel', 'cancel()'),
+    edge('ste-4', 'st-paid', 'st-ship', 'dispatch()'),
+    edge('ste-5', 'st-ship', 'st-del', 'deliver()'),
+    edge('ste-6', 'st-del', 'st-end'),
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/*  Component diagram — payment platform                               */
+/* ------------------------------------------------------------------ */
+
+export const COMPONENT: Diagram = {
+  id: 'diag-component',
+  name: 'Payment Platform — Component',
+  type: 'component',
+  createdAt: '2026-07-29T09:00:00Z',
+  updatedAt: '2026-08-05T15:00:00Z',
+  nodes: [
+    { id: 'cp-web', type: 'componentNode', position: { x: 0, y: 0 }, data: { label: 'Web App', type: 'component' } },
+    { id: 'cp-mobile', type: 'componentNode', position: { x: 340, y: 0 }, data: { label: 'Mobile App', type: 'component' } },
+    { id: 'cp-gw', type: 'componentNode', position: { x: 170, y: 180 }, data: { label: 'API Gateway', type: 'component' } },
+    { id: 'cp-auth', type: 'componentNode', position: { x: 0, y: 360 }, data: { label: 'Auth Service', type: 'component' } },
+    { id: 'cp-pay', type: 'componentNode', position: { x: 340, y: 360 }, data: { label: 'Payment Service', type: 'component' } },
+    { id: 'cp-db', type: 'databaseNode', position: { x: 620, y: 200 }, data: { label: 'Accounts DB', type: 'component', fields: ['account', 'transaction'] } },
+  ],
+  edges: [
+    edge('cpe-1', 'cp-web', 'cp-gw'),
+    edge('cpe-2', 'cp-mobile', 'cp-gw'),
+    edge('cpe-3', 'cp-gw', 'cp-auth'),
+    edge('cpe-4', 'cp-gw', 'cp-pay'),
+    edge('cpe-5', 'cp-pay', 'cp-db'),
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/*  Deployment diagram — cloud order platform                          */
+/* ------------------------------------------------------------------ */
+
+export const DEPLOYMENT: Diagram = {
+  id: 'diag-deployment',
+  name: 'Cloud Platform — Deployment',
+  type: 'deployment',
+  createdAt: '2026-07-30T14:00:00Z',
+  updatedAt: '2026-08-04T10:00:00Z',
+  nodes: [
+    { id: 'dp-client', type: 'umlNode', position: { x: 0, y: 0 }, data: { label: 'Client Browser', type: 'deployment', stereotype: 'device' } },
+    { id: 'dp-app', type: 'umlNode', position: { x: 320, y: 0 }, data: { label: 'App Server', type: 'deployment', stereotype: 'server' } },
+    { id: 'dp-web', type: 'umlNode', position: { x: 320, y: 200 }, data: { label: 'Web Server', type: 'deployment', stereotype: 'server' } },
+    { id: 'dp-db', type: 'databaseNode', position: { x: 620, y: 200 }, data: { label: 'PostgreSQL', type: 'deployment', fields: [] } },
+    { id: 'dp-queue', type: 'umlNode', position: { x: 620, y: 0 }, data: { label: 'Message Queue', type: 'deployment', stereotype: 'service' } },
+  ],
+  edges: [
+    edge('dpe-1', 'dp-client', 'dp-web', 'HTTPS'),
+    edge('dpe-2', 'dp-web', 'dp-app', 'REST'),
+    edge('dpe-3', 'dp-app', 'dp-db', 'SQL'),
+    edge('dpe-4', 'dp-app', 'dp-queue', 'AMQP'),
+  ],
+};
+
 export const DIAGRAMS_BY_TYPE: Record<DiagramType, Diagram> = {
   'use-case': USE_CASE,
   class: CLASS_SMS,
   sequence: SEQUENCE,
   activity: ACTIVITY,
   er: ER,
+  state: STATE,
+  component: COMPONENT,
+  deployment: DEPLOYMENT,
 };
 
 export const DIAGRAM_TYPE_LABELS: Record<DiagramType, string> = {
@@ -202,4 +286,7 @@ export const DIAGRAM_TYPE_LABELS: Record<DiagramType, string> = {
   sequence: 'Sequence',
   activity: 'Activity',
   er: 'ER Diagram',
+  state: 'State Diagram',
+  component: 'Component Diagram',
+  deployment: 'Deployment Diagram',
 };
