@@ -26,6 +26,9 @@ const TYPE_HEADINGS: Record<DiagramType, string> = {
   sequence: 'Sequence Diagram',
   activity: 'Activity Diagram',
   er: 'Entity Relationship Diagram',
+  state: 'State Diagram',
+  component: 'Component Diagram',
+  deployment: 'Deployment Diagram',
 };
 
 export function buildPlantUml(diagram: Diagram): string {
