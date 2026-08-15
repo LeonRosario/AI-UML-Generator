@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bot, Send, Sparkles, User } from 'lucide-react';
 import type { ChatMessage } from '@/types';
@@ -6,7 +6,7 @@ import { explainDiagram, findIssues, improveDiagram, sendChatMessage } from '@/s
 import { useToast } from '@/components/ui/Toast';
 import type { Diagram } from '@/types';
 
-const QUICK_ACTIONS = [
+const QUICK_ACTIONS_DATA = [
   { label: 'Add Actor', prompt: 'Add an administrator actor who can manage students.' },
   { label: 'Add Class', prompt: 'Add a Session class with startTime and endTime.' },
   { label: 'Add Relationship', prompt: 'Connect Student to Course with a 1..* association.' },
@@ -29,6 +29,9 @@ export function AIChat({ diagram, collapsed }: { diagram: Diagram; collapsed: bo
   const [usedCount, setUsedCount] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
+
+  // Memoize quick actions to prevent array recreation on every render
+  const quickActions = useMemo(() => QUICK_ACTIONS_DATA, []);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -119,9 +122,9 @@ export function AIChat({ diagram, collapsed }: { diagram: Diagram; collapsed: bo
         <div className="mb-2 ${collapsed ? 'hidden' : ''}">
           <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">Quick actions</p>
           <div className="flex flex-wrap gap-1.5">
-            {QUICK_ACTIONS.filter(
-              (a) => !(collapsed && ['Explain Diagram', 'Find Issues', 'Improve Diagram'].includes(a.label)),
-            ).map((a) => (
+            {quickActions
+              .filter((a) => !(collapsed && ['Explain Diagram', 'Find Issues', 'Improve Diagram'].includes(a.label)))
+              .map((a) => (
               <button
                 key={a.label}
                 onClick={() => run(a.prompt)}
@@ -134,9 +137,9 @@ export function AIChat({ diagram, collapsed }: { diagram: Diagram; collapsed: bo
           </div>
         </div>
         <form
-          onSubmit={(e) => {
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
-            if (input.trim()) run(input.trim());
+            if (input.trim()) void run(input.trim());
           }}
           className="flex items-center gap-2"
         >
@@ -145,6 +148,8 @@ export function AIChat({ diagram, collapsed }: { diagram: Diagram; collapsed: bo
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask AI to modify your diagram…"
             className="h-9.5 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-[13px] placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            type="text"
+            autoComplete="off"
           />
           <button
             type="submit"
