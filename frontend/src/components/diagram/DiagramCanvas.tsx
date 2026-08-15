@@ -45,13 +45,9 @@ export type DiagramCanvasProps = {
   fitViewOnInit?: boolean;
 };
 
-const nodeTypes = {
-  actorNode: ActorNode,
-  classNode: ClassNode,
-  useCaseNode: UseCaseNode,
-  entityNode: EntityNode,
-  genericNode: GenericNode,
-};
+// Grid constants for consistency and easier maintenance
+const GRID_SIZE = 24;
+const GRID_STEPS: [number, number] = [GRID_SIZE, GRID_SIZE];
 
 export function DiagramCanvas({
   nodes,
@@ -75,6 +71,18 @@ export function DiagramCanvas({
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Memoize nodeTypes to prevent unnecessary re-renders of node components
+  const nodeTypes = useMemo(
+    () => ({
+      actorNode: ActorNode,
+      classNode: ClassNode,
+      useCaseNode: UseCaseNode,
+      entityNode: EntityNode,
+      genericNode: GenericNode,
+    }),
+    [],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -185,7 +193,7 @@ export function DiagramCanvas({
       onEdgesDelete={onEdgesDelete}
       onNodeDragStop={onNodeDragStop}
       snapToGrid
-      snapGrid={[24, 24]}
+      snapGrid={GRID_STEPS}
       fitView={fitViewOnInit}
       fitViewOptions={{ padding: 0.25, maxZoom: 1 }}
       minZoom={0.15}
