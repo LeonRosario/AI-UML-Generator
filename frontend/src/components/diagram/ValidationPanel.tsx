@@ -95,8 +95,8 @@ export function ValidationPanel({ diagram }: { diagram: Diagram }) {
           <div className="mt-5">
             <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Warnings</p>
             <div className="space-y-1.5">
-              {analysis.warnings.map((w, i) => (
-                <div key={i} className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-[13px] text-amber-800">
+              {analysis.warnings.map((w) => (
+                <div key={w} className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-[13px] text-amber-800">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                   {w}
                 </div>
