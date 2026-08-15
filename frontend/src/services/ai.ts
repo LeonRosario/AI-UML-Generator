@@ -45,23 +45,34 @@ function jitter(diagram: Diagram): Diagram {
 /**
  * Simulated AI generation. Replace the internals with a real backend call
  * (POST /api/generate) once the API is available — the signature stays the same.
+ * 
+ * @throws Error if diagram type is not found or generation fails
  */
 export async function generateDiagram(
   requirements: string,
   type: DiagramType,
   onStage?: (stage: GenerationStage) => void,
 ): Promise<Diagram> {
-  for (const stage of GENERATION_STAGES) {
-    onStage?.(stage);
-    await delay(stage.progress > 70 ? 650 : 450);
+  try {
+    for (const stage of GENERATION_STAGES) {
+      onStage?.(stage);
+      await delay(stage.progress > 70 ? 650 : 450);
+    }
+    const base = DIAGRAMS_BY_TYPE[type];
+    if (!base) {
+      throw new Error(`Unknown diagram type: ${type}`);
+    }
+    return {
+      ...jitter(base),
+      name: deriveName(requirements, type),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    // Log error for debugging (replace with proper logging service in production)
+    console.error('Failed to generate diagram:', error);
+    throw error;
   }
-  const base = DIAGRAMS_BY_TYPE[type];
-  return {
-    ...jitter(base),
-    name: deriveName(requirements, type),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
 }
 
 /* ------------------------------------------------------------------ */
