@@ -10,6 +10,11 @@ import { Editor } from '@/pages/Editor';
 import { Settings } from '@/pages/Settings';
 import { AssistantPage } from '@/pages/Assistant';
 import { Recent } from '@/pages/Recent';
+import { Login } from '@/pages/Login';
+import { Signup } from '@/pages/Signup';
+import { ForgotPassword } from '@/pages/ForgotPassword';
+import { AuthProvider } from '@/services/auth';
+import { ProtectedRoute } from '@/routes/ProtectedRoute';
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
@@ -23,23 +28,27 @@ export default function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
-        <Routes>
+        <AuthProvider>
+          <Routes>
           <Route path="/" element={<Landing />} />
-          <Route
-            path="/app"
-            element={<AppShell />}
-          >
-            <Route index element={<Page><Dashboard /></Page>} />
-            <Route path="projects" element={<Page><Projects /></Page>} />
-            <Route path="templates" element={<Page><Templates /></Page>} />
-            <Route path="assistant" element={<Page><AssistantPage /></Page>} />
-            <Route path="recent" element={<Page><Recent /></Page>} />
-            <Route path="settings" element={<Page><Settings /></Page>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/app" element={<AppShell />}>
+              <Route index element={<Page><Dashboard /></Page>} />
+              <Route path="projects" element={<Page><Projects /></Page>} />
+              <Route path="templates" element={<Page><Templates /></Page>} />
+              <Route path="assistant" element={<Page><AssistantPage /></Page>} />
+              <Route path="recent" element={<Page><Recent /></Page>} />
+              <Route path="settings" element={<Page><Settings /></Page>} />
+            </Route>
+            <Route path="/app/editor/:projectId" element={<Editor />} />
+            <Route path="/app/editor" element={<Navigate to="/app/editor/new" replace />} />
           </Route>
-          <Route path="/app/editor/:projectId" element={<Editor />} />
-          <Route path="/app/editor" element={<Navigate to="/app/editor/new" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </ToastProvider>
   );
