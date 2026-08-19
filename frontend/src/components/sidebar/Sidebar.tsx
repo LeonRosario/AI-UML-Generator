@@ -13,6 +13,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/cn';
+import { useAuth } from '@/services/auth';
 
 const items = [
   { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -25,6 +26,8 @@ const items = [
 
 export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolean; onToggle: () => void; onNavigate?: () => void }) {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const initials = user?.name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() ?? 'U';
 
   return (
     <aside
@@ -74,12 +77,12 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
       <div className="border-t border-slate-200 p-2.5">
         <div className={cn('flex items-center gap-2.5 rounded-lg px-2 py-1.5', collapsed && 'justify-center px-0')}>
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-600">
-            AK
+            {initials}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-800">Alex Kim</p>
-              <p className="truncate text-xs text-slate-400">alex@umlforge.app</p>
+              <p className="truncate text-sm font-medium text-slate-800">{user?.name}</p>
+              <p className="truncate text-xs text-slate-400">{user?.email}</p>
             </div>
           )}
         </div>
@@ -95,7 +98,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
               <Settings className="h-4 w-4" />
               Account settings
             </button>
-            <button className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600">
+            <button onClick={() => void signOut()} className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600">
               <LogOut className="h-4 w-4" />
               Logout
             </button>
