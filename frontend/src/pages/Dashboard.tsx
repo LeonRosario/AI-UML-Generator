@@ -7,15 +7,17 @@ import { DiagramPreview } from '@/components/diagram/DiagramPreview';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
+import { useAuth } from '@/services/auth';
 
 export function Dashboard() {
   const recent = PROJECTS.slice(0, 3);
+  const { user } = useAuth();
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, Alex</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, {user?.name.split(' ')[0]}</h1>
           <p className="mt-1 text-sm text-slate-500">Pick up where you left off, or start something new.</p>
         </div>
         <Link to="/app/projects">
