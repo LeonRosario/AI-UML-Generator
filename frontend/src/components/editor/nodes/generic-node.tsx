@@ -17,23 +17,23 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
   if (nodeType === 'genericNode' && variant === 'start') {
     return (
       <div className="uml-node flex h-9 w-9 items-center justify-center">
+        <NodeHandles />
         <div className="h-8 w-8 rounded-full border-2" style={{ borderColor: data.borderColor ?? '#334155' }} />
-        <HandleStub />
       </div>
     );
   }
   if (nodeType === 'genericNode' && variant === 'end') {
     return (
       <div className="uml-node relative flex h-9 w-9 items-center justify-center">
+        <NodeHandles />
         <div className="h-7 w-7 rounded-full" style={{ background: data.fill ?? '#334155' }} />
-        <HandleStub />
       </div>
     );
   }
   if (nodeType === 'genericNode' && variant === 'decision') {
     return (
       <div className="uml-node relative h-[76px] w-[76px]">
-        <HandleStub />
+        <NodeHandles />
         <div className="absolute inset-0 rotate-45 rounded-md border-[1.5px] shadow-soft" style={nodeStyle(data)}>
           <div className="flex h-full items-center justify-center text-[11px] font-medium" style={{ color: data.textColor ?? '#0f172a' }}>
             {label}
@@ -45,7 +45,7 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
   if (nodeType === 'genericNode' && variant === 'lifeline') {
     return (
       <EditorNodeShell className="w-[150px]" style={nodeStyle(data)}>
-        <HandleStub />
+        <NodeHandles />
         <div className="border-b-2 px-3 py-1.5 text-center text-[12px] font-medium" style={{ borderColor: data.borderColor ?? '#334155' }}>
           {label}
         </div>
@@ -60,7 +60,7 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
   if (nodeType === 'interfaceSymbolNode') {
     return (
       <div className="uml-node relative h-[60px] w-8">
-        <HandleStub />
+        <NodeHandles />
         <div className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2" style={{ borderColor: data.borderColor ?? '#334155' }} />
         <div className="absolute left-3 top-1/2 h-px w-5 -translate-y-1/2" style={{ background: data.borderColor ?? '#334155' }} />
       </div>
@@ -72,11 +72,13 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
     const src = (data.imageSrc as string | undefined) ?? (data.src as string | undefined);
     return (
       <EditorNodeShell className="overflow-hidden" style={nodeStyle(data)}>
-        <HandleStub />
+        <NodeHandles />
         {src ? (
           <img src={src} alt={label} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-[120px] w-[160px] items-center justify-center text-[11px] text-slate-400">Image — set via properties</div>
+          <div className="flex h-[120px] w-[160px] items-center justify-center text-[11px] text-slate-400">
+            Image — set via properties
+          </div>
         )}
       </EditorNodeShell>
     );
@@ -85,8 +87,8 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
   /* ---------- text ---------- */
   if (nodeType === 'textNode') {
     return (
-      <div className="uml-node" onDoubleClick={(e) => e.stopPropagation()}>
-        <HandleStub />
+      <div className="uml-node">
+        <NodeHandles />
         <InlineLabel
           value={label}
           onRename={(value) => updateNodeData(id, { label: value })}
@@ -99,8 +101,11 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
   /* ---------- circle ---------- */
   if (nodeType === 'circleNode') {
     return (
-      <EditorNodeShell className="flex h-[100px] w-[100px] items-center justify-center rounded-full" style={{ ...nodeStyle(data), borderRadius: 999 }}>
-        <HandleStub />
+      <EditorNodeShell
+        className="flex h-[100px] w-[100px] items-center justify-center rounded-full"
+        style={{ ...nodeStyle(data), borderRadius: 999 }}
+      >
+        <NodeHandles />
         <InlineLabel value={label} onRename={(value) => updateNodeData(id, { label: value })} textClassName="text-[12px] font-medium" className="min-w-8" />
       </EditorNodeShell>
     );
@@ -114,7 +119,7 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
       className={pill ? 'min-w-[140px] rounded-full px-5 py-2.5' : isStep ? 'min-w-[150px] rounded-md px-5 py-2.5' : 'min-w-[150px] px-5 py-2.5'}
       style={nodeStyle(data)}
     >
-      <HandleStub />
+      <NodeHandles />
       <div className="flex items-center justify-center gap-2">
         {pill && (data.stereotype as string) && (
           <span className="text-[9px] uppercase tracking-wide opacity-60">&lt;&lt;{data.stereotype}&gt;&gt;</span>
@@ -123,10 +128,6 @@ function GenericNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
       </div>
     </EditorNodeShell>
   );
-}
-
-function HandleStub() {
-  return null;
 }
 
 export const GenericNode = memo(GenericNodeComponent);
