@@ -128,7 +128,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
       {showLabel && (
         <EdgeLabelRenderer>
           <div
-            className="pointer-events-auto absolute z-20 -translate-x-1/2 -translate-y-1/2"
+            className="pointer-events-auto absolute z-20"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
             {editing ? (
