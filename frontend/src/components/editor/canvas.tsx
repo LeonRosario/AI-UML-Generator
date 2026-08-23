@@ -126,7 +126,7 @@ export function EditorCanvas({
   }, []);
 
   const handleViewportChange = useCallback(
-    (_event: MouseEvent | TouchEvent, viewport: Viewport) => onViewportChange?.(viewport),
+    (_event: MouseEvent | TouchEvent | null, viewport: Viewport) => onViewportChange?.(viewport),
     [onViewportChange],
   );
 
