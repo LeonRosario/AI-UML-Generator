@@ -232,8 +232,9 @@ export function templateToDiagram(template: Template): Diagram {
 export function parseDiagramJson(raw: string): Diagram {
   const parsed = JSON.parse(raw) as Partial<Diagram> & { data?: unknown };
   if (!parsed || typeof parsed !== 'object') throw new Error('Invalid diagram file.');
-  const nodes = parsed.nodes ?? parsed.data?.nodes;
-  const edges = parsed.edges ?? parsed.data?.edges;
+  const nested = parsed.data && typeof parsed.data === 'object' ? parsed.data as { nodes?: unknown; edges?: unknown } : {};
+  const nodes = parsed.nodes ?? nested.nodes;
+  const edges = parsed.edges ?? nested.edges;
   if (!Array.isArray(nodes) || !Array.isArray(edges)) throw new Error('Missing nodes or edges in the diagram file.');
   return normalizeDiagram({
     id: typeof parsed.id === 'string' ? parsed.id : uid('diag'),
