@@ -86,7 +86,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   const color = (data as RelationshipEdgeData | undefined)?.color ?? DEFAULT_EDGE_COLOR;
 
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(label ?? '');
+  const [draft, setDraft] = useState(typeof label === 'string' ? label : '');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -104,7 +104,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
   });
 
   const strokeColor = selected ? SELECTED_EDGE_COLOR : color;
-  const showLabel = !!(label ?? draft);
+  const showLabel = !!(typeof label === 'string' ? label : draft);
 
   const commit = () => {
     updateEdge(id, { label: draft.trim() || undefined });
@@ -122,8 +122,8 @@ function RelationshipEdgeComponent(props: EdgeProps) {
           strokeWidth: selected ? 2 : 1.5,
           ...(config.dash ? { strokeDasharray: config.dash } : {}),
         }}
-        markerStart={config.markerStart ? markerUrl(config.markerStart, selected) : undefined}
-        markerEnd={config.markerEnd ? markerUrl(config.markerEnd, selected) : undefined}
+        markerStart={config.markerStart ? markerUrl(config.markerStart, !!selected) : undefined}
+        markerEnd={config.markerEnd ? markerUrl(config.markerEnd, !!selected) : undefined}
       />
       {showLabel && (
         <EdgeLabelRenderer>
@@ -150,7 +150,7 @@ function RelationshipEdgeComponent(props: EdgeProps) {
                 type="button"
                 onDoubleClick={(e) => {
                   e.stopPropagation();
-                  setDraft(label ?? '');
+                  setDraft(typeof label === 'string' ? label : '');
                   setEditing(true);
                 }}
                 className={cn(
