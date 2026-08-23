@@ -276,12 +276,12 @@ export const TEMPLATES: Template[] = [
     uses: 487,
     diagram: build(
       [
-        node('componentNode', 0, 0, 'Web App', { type: 'component' }),
-        node('componentNode', 340, 0, 'Mobile App', { type: 'component' }),
-        node('componentNode', 170, 180, 'API Gateway', { type: 'component' }),
-        node('componentNode', 0, 360, 'Auth Service', { type: 'component' }),
-        node('componentNode', 340, 360, 'Payment Service', { type: 'component' }),
-        node('databaseNode', 620, 200, 'Accounts DB', { type: 'component', fields: ['account', 'transaction'] }),
+        node('tp-1', 'componentNode', 0, 0, 'Web App', { type: 'component' }),
+        node('tp-2', 'componentNode', 340, 0, 'Mobile App', { type: 'component' }),
+        node('tp-3', 'componentNode', 170, 180, 'API Gateway', { type: 'component' }),
+        node('tp-4', 'componentNode', 0, 360, 'Auth Service', { type: 'component' }),
+        node('tp-5', 'componentNode', 340, 360, 'Payment Service', { type: 'component' }),
+        node('tp-6', 'databaseNode', 620, 200, 'Accounts DB', { type: 'component', fields: ['account', 'transaction'] }),
       ],
       [
         { ...edge('tpm-1', 'tp-1', 'tp-3', ''), type: 'uml', data: { relationship: 'association' } },
