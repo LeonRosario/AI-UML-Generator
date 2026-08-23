@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import type { DiagramNodeData } from '@/types';
+import { membersToStrings } from '@/lib/editor/diagram-utils';
 
 const MAX_ROWS = 12;
 
@@ -12,8 +13,8 @@ function truncate(rows: string[], max: number) {
 
 function ClassNodeComponent({ data }: NodeProps<Node<DiagramNodeData>>) {
   const { label, attributes = [], methods = [], stereotype } = data as DiagramNodeData;
-  const attrs = truncate(attributes, MAX_ROWS);
-  const mthds = truncate(methods, MAX_ROWS);
+  const attrs = truncate(membersToStrings(attributes, 'attribute'), MAX_ROWS);
+  const mthds = truncate(membersToStrings(methods, 'method'), MAX_ROWS);
 
   return (
     <div className="uml-node w-[200px] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-soft">
