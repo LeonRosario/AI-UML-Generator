@@ -14,8 +14,8 @@ export type DiagramNodeData = {
   label: string;
   type: DiagramType;
   nodeType?: string;
-  attributes?: string[];
-  methods?: string[];
+  attributes?: string[] | Array<{ id: string; visibility: '+' | '-' | '#' | '~'; name: string; type?: string; params?: string; returnType?: string }>;
+  methods?: string[] | Array<{ id: string; visibility: '+' | '-' | '#' | '~'; name: string; type?: string; params?: string; returnType?: string }>;
   fields?: string[];
   stereotype?: string;
   note?: string;

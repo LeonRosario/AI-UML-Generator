@@ -20,6 +20,9 @@ const TYPE_NAMES: Record<DiagramType, string> = {
   sequence: 'Sequence',
   activity: 'Activity',
   er: 'ER Diagram',
+  state: 'State Diagram',
+  component: 'Component Diagram',
+  deployment: 'Deployment Diagram',
 };
 
 function delay(ms: number) {

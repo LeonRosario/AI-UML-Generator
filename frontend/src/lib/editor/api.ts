@@ -700,7 +700,7 @@ export async function aiExplainDiagram(diagram: Diagram): Promise<ExplainResult>
     from: labels[e.source] ?? e.source,
     to: labels[e.target] ?? e.target,
     type: (e.data as { relationship?: string } | undefined)?.relationship ?? 'association',
-    ...(e.label ? { label: e.label } : {}),
+    ...(typeof e.label === 'string' ? { label: e.label } : {}),
   }));
 
   const overview = `This ${typeLabel} models **${stats.nodeCount} element${stats.nodeCount === 1 ? '' : 's'}** and **${stats.edgeCount} relationship${stats.edgeCount === 1 ? '' : 's'}**. ${entities.length ? `The main elements are ${entities.slice(0, 4).map((e) => e.name).join(', ')}.` : ''} ${relationships.length ? 'The core flow connects ' + relationships.slice(0, 3).map((r) => `${r.from} → ${r.to}`).join(', ') + '.' : 'No relationships have been defined yet.'}`;
