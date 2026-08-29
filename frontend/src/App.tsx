@@ -15,6 +15,7 @@ import { Signup } from '@/pages/Signup';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import { AuthProvider } from '@/services/auth';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
+import { UmlEditor } from '@/components/editor/uml-editor';
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route element={<ProtectedRoute />}>
+            <Route path="/editor" element={<UmlEditor />} />
             <Route path="/app" element={<AppShell />}>
               <Route index element={<Page><Dashboard /></Page>} />
               <Route path="projects" element={<Page><Projects /></Page>} />
