@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { UMLDemo } from '@/components/marketing/UMLDemo';
 import { HowItWorks } from '@/components/ui/HowItWorks';
+import { HowItWorksCareerAI } from '@/components/sections/how-it-works';
 import TextBlockAnimation from '@/components/ui/text-block-animation';
 import { USE_CASE, DIAGRAMS_BY_TYPE, DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
 import type { DiagramType } from '@/types';
@@ -118,6 +119,9 @@ export function Landing() {
           </motion.div>
         </div>
       </section>
+
+      {/* ---------- How It Works (CareerAI) ---------- */}
+      <HowItWorksCareerAI />
 
       {/* ---------- Features ---------- */}
       <section id="features" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
