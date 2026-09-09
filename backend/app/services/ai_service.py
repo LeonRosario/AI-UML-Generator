@@ -3,10 +3,8 @@ from __future__ import annotations
 """
 AI Service — powers /ai/generate-diagram, /ai/modify-diagram, /ai/explain-diagram.
 
-Provider priority:
-  1. Google Gemini  (GEMINI_API_KEY)
-  2. OpenAI         (OPENAI_API_KEY)
-  3. Built-in local generator (no key required — same as frontend fallback)
+Uses AI_PROVIDER first, then the other configured provider on failure.
+There is no offline provider. Missing credentials return a clear 400 error.
 
 The service always returns the exact JSON shapes the frontend TypeScript types expect:
   - GenerateDiagramResponse  (AiDiagramPayload)
@@ -22,7 +20,7 @@ import asyncio
 from typing import Any
 
 from app.config import get_settings
-from app.core.exceptions import AIProviderError
+from app.core.exceptions import AIProviderError, BadRequestError
 from app.schemas.ai import (
     AiEdgePayload,
     AiNodePayload,
@@ -179,27 +177,27 @@ async def _call_gemini(prompt: str) -> str:
     except ImportError as exc:
         raise AIProviderError("google-generativeai package is not installed.") from exc
     except Exception as exc:
-        logger.error("Gemini error: %s", exc)
-        raise AIProviderError(f"Gemini API error: {exc}") from exc
+        logger.warning("Gemini request failed (%s)", type(exc).__name__)
+        raise AIProviderError() from exc
 
 
 async def _call_openai(prompt: str) -> str:
     """Call OpenAI and return the raw text response."""
     try:
         from openai import AsyncOpenAI  # type: ignore[import]
-        client = AsyncOpenAI(api_key=_settings.openai_api_key)
-        response = await client.chat.completions.create(
-            model=_settings.openai_model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
-            max_tokens=4096,
-        )
+        async with AsyncOpenAI(api_key=_settings.openai_api_key, timeout=45, max_retries=0) as client:
+            response = await client.chat.completions.create(
+                model=_settings.openai_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                max_tokens=4096,
+            )
         return response.choices[0].message.content or ""
     except ImportError as exc:
         raise AIProviderError("openai package is not installed.") from exc
     except Exception as exc:
-        logger.error("OpenAI error: %s", exc)
-        raise AIProviderError(f"OpenAI API error: {exc}") from exc
+        logger.warning("OpenAI request failed (%s)", type(exc).__name__)
+        raise AIProviderError() from exc
 
 
 async def _call_ai(prompt: str) -> str:
@@ -209,19 +207,20 @@ async def _call_ai(prompt: str) -> str:
     has_openai = bool(_settings.openai_api_key)
 
     if not has_gemini and not has_openai:
-        raise AIProviderError(
-            "No AI API key is configured. Set GEMINI_API_KEY or OPENAI_API_KEY in your .env file."
+        raise BadRequestError(
+            "AI provider not configured. Set GEMINI_API_KEY or OPENAI_API_KEY in your .env file."
         )
 
-    if provider == "gemini" and has_gemini:
-        return await _call_gemini(prompt)
-    if provider == "openai" and has_openai:
-        return await _call_openai(prompt)
-
-    # Fall back to whichever key is available
-    if has_gemini:
-        return await _call_gemini(prompt)
-    return await _call_openai(prompt)
+    providers = [(_call_gemini, has_gemini), (_call_openai, has_openai)]
+    if provider == "openai":
+        providers.reverse()
+    for call, configured in providers:
+        if configured:
+            try:
+                return await call(prompt)
+            except AIProviderError:
+                continue
+    raise AIProviderError("AI providers are unavailable. Check your credentials or try again later.")
 
 
 # ─── JSON extraction ──────────────────────────────────────────────────────────

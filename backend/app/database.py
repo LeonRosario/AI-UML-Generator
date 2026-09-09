@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -60,3 +61,15 @@ async def create_all_tables() -> None:
     """Create all tables in the database (used in tests and SQLite mode)."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        if conn.dialect.name == "sqlite":
+            # create_all does not upgrade existing tables. Older local databases
+            # predate projects; add the nullable link without rebuilding data.
+            columns = await conn.run_sync(lambda sync: inspect(sync).get_columns("diagrams"))
+            if not any(column["name"] == "project_id" for column in columns):
+                await conn.exec_driver_sql(
+                    "ALTER TABLE diagrams ADD COLUMN project_id VARCHAR(36) "
+                    "REFERENCES projects(id) ON DELETE SET NULL"
+                )
+            await conn.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_diagrams_project_id ON diagrams (project_id)"
+            )

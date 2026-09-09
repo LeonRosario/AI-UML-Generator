@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     openai_api_key: str = ""
     ai_provider: Literal["gemini", "openai"] = "gemini"
-    gemini_model: str = "gemini-3.6-flash"
+    gemini_model: str = "gemini-2.5-flash"
     openai_model: str = "gpt-4o-mini"
 
     # ── CORS ──────────────────────────────────────────────────────────────────
@@ -61,6 +61,17 @@ class Settings(BaseSettings):
             elif "127.0.0.1" in o:
                 origins.add(o.replace("127.0.0.1", "localhost"))
         return list(origins)
+
+    @field_validator("gemini_api_key", "openai_api_key", mode="before")
+    @classmethod
+    def validate_ai_key(cls, value: str) -> str:
+        key = value.strip()
+        placeholder = key.lower().replace("-", "_").replace(" ", "_")
+        if any(marker in placeholder for marker in (
+            "your_", "_here", "placeholder", "changeme", "change_me", "replace_me",
+        )) or placeholder in {"none", "null", "todo"}:
+            return ""
+        return key
 
     @field_validator("database_url", mode="before")
     @classmethod
