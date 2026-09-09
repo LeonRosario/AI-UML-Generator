@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider, useReactFlow } from '@xyflow/react';
 import { Box, ChevronLeft, LayoutTemplate, Redo2, Save, Share2, Sparkles, Undo2, X } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useEditorStore } from '@/store/editor-store';
 import { EditorCanvas } from './canvas';
 import { ShapeLibrary } from './shape-library';
@@ -17,7 +17,9 @@ import { cn } from '@/lib/cn';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/services/auth';
 import { PROJECTS } from '@/data/projects';
-import type { Project } from '@/types';
+import { TEMPLATES } from '@/data/templates';
+import { DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
+import type { DiagramType, Project } from '@/types';
 import { createBlankDiagram } from '@/lib/editor/diagram-utils';
 
 function FlowTools() {
@@ -34,10 +36,13 @@ function FlowTools() {
 export function UmlEditor() {
   const { projectId } = useParams();
   const { user } = useAuth();
-  return <ReactFlowProvider key={`${user?.id}:${projectId ?? 'last'}`}><EditorSession projectId={projectId} userId={user?.id ?? 'local'} /></ReactFlowProvider>;
+  const [searchParams] = useSearchParams();
+  const templateId = searchParams.get('template');
+  const requestedType = searchParams.get('type');
+  return <ReactFlowProvider key={`${user?.id}:${projectId ?? 'last'}:${templateId}:${requestedType}`}><EditorSession projectId={projectId} userId={user?.id ?? 'local'} templateId={templateId} requestedType={requestedType} /></ReactFlowProvider>;
 }
 
-function EditorSession({ projectId, userId }: { projectId?: string; userId: string }) {
+function EditorSession({ projectId, userId, templateId, requestedType }: { projectId?: string; userId: string; templateId: string | null; requestedType: string | null }) {
   const navigate = useNavigate();
   const toDiagram = useEditorStore((state) => state.toDiagram);
   const content = useEditorStore(useShallow((state) => [state.diagramId, state.name, state.type, state.nodes, state.edges]));
@@ -62,22 +67,35 @@ function EditorSession({ projectId, userId }: { projectId?: string; userId: stri
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      // Let StrictMode cancel its initial effect before creating a new diagram.
+      await Promise.resolve();
+      if (cancelled) return;
       let projects = PROJECTS;
-      try { projects = JSON.parse(localStorage.getItem('projects') ?? 'null') ?? PROJECTS; } catch { /* use built-in examples */ }
+      try { const stored = JSON.parse(localStorage.getItem('projects') ?? 'null'); if (Array.isArray(stored)) projects = stored; } catch { /* use built-in examples */ }
       const project = (projects as Project[]).find((item) => item.id === projectId);
       const id = project ? `${userId}-${project.id}` : projectId === 'new' ? null : projectId ?? localStorage.getItem(lastDiagramKey);
       const savedDiagram = id ? await fetchDiagram(id) : null;
       if (cancelled) return;
+      const template = projectId === 'new' ? TEMPLATES.find((item) => item.id === templateId) : undefined;
+      const type = requestedType && requestedType in DIAGRAM_TYPE_LABELS ? requestedType as DiagramType : 'class';
+      const blank = createBlankDiagram(template?.diagramType ?? type, template?.name);
       const initial = savedDiagram ?? (project
         ? normalizeDiagram({ ...project.preview, id: id!, name: project.name })
-        : createBlankDiagram());
+        : template ? normalizeDiagram({ ...template.diagram, id: blank.id, name: template.name, createdAt: blank.createdAt, updatedAt: blank.updatedAt }) : blank);
+      if (projectId === 'new') {
+        // Persist before changing the URL so reload opens this exact copy.
+        await persistDiagram(initial);
+        if (!cancelled) navigate(`/app/editor/${initial.id}`, { replace: true });
+        return;
+      }
       loadDiagram(initial);
       setHydrated(true);
     })();
     return () => { cancelled = true; };
-  }, [projectId, lastDiagramKey, loadDiagram, userId]);
+  }, [projectId, lastDiagramKey, loadDiagram, userId, templateId, requestedType, navigate]);
 
   const save = useCallback(async () => {
+    if (!hydrated) return;
     const sequence = ++saveSequence.current;
     setSaveStatus('saving');
     try {
@@ -86,7 +104,7 @@ function EditorSession({ projectId, userId }: { projectId?: string; userId: stri
     } catch {
       if (sequence === saveSequence.current) setSaveStatus('error');
     }
-  }, [diagram]);
+  }, [diagram, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -112,6 +130,8 @@ function EditorSession({ projectId, userId }: { projectId?: string; userId: stri
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [save, redo, undo]);
+
+  if (!hydrated) return <div role="status" className="grid h-screen place-items-center text-slate-500">Loading diagram…</div>;
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 text-slate-900">

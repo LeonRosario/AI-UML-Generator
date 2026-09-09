@@ -20,7 +20,7 @@ export function Dashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, {user?.name.split(' ')[0]}</h1>
           <p className="mt-1 text-sm text-slate-500">Pick up where you left off, or start something new.</p>
         </div>
-        <Link to="/editor">
+        <Link to="/app/editor/new">
           <Button>
             <FilePlus2 className="h-4 w-4" /> Create New Diagram
           </Button>
