@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ReactFlowProvider, useReactFlow } from '@xyflow/react';
-import { Check, ChevronLeft, Download, Redo2, Save, Share2, Sparkles, Undo2 } from 'lucide-react';
+import { Box, ChevronLeft, LayoutTemplate, Redo2, Save, Share2, Sparkles, Undo2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEditorStore } from '@/store/editor-store';
 import { EditorCanvas } from './canvas';
@@ -11,7 +11,7 @@ import { GenerateModal } from '@/components/diagram/GenerateModal';
 import { AIChat } from '@/components/ai/AIChat';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
-import { persistDiagram } from '@/lib/editor/api';
+import { fetchDiagram, persistDiagram } from '@/lib/editor/api';
 import { normalizeDiagram } from '@/lib/editor/diagram-utils';
 import { cn } from '@/lib/cn';
 
@@ -38,17 +38,37 @@ export function UmlEditor() {
   const canRedo = useEditorStore((state) => state.future.length > 0);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [libraryTab, setLibraryTab] = useState<'shapes' | 'templates'>('shapes');
+  // Start compact editor views in the library so narrow browser windows do not
+  // render a clipped desktop sidebar. Users can close it to return to canvas.
+  const [mobileLibraryOpen, setMobileLibraryOpen] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 1279px)').matches);
   const [chatOpen, setChatOpen] = useState(false);
   const [saved, setSaved] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
   const saveTimer = useRef<number | undefined>(undefined);
+  const loaded = useRef(false);
 
   useEffect(() => {
+    if (loaded.current) return;
+    loaded.current = true;
+    const id = localStorage.getItem('umlforge:last-editor-diagram');
+    if (!id) { setHydrated(true); return; }
+    void fetchDiagram(id).then((savedDiagram) => {
+      if (savedDiagram) loadDiagram(savedDiagram);
+    }).finally(() => setHydrated(true));
+  }, [loadDiagram]);
+
+  useEffect(() => {
+    if (!hydrated) return;
     const timer = window.setTimeout(() => {
       void persistDiagram(diagram).then(() => setSaved(true)).catch(() => setSaved(false));
     }, 700);
     setSaved(false);
     return () => window.clearTimeout(timer);
-  }, [diagram]);
+  }, [diagram, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) localStorage.setItem('umlforge:last-editor-diagram', diagram.id);
+  }, [diagram.id, hydrated]);
 
   useEffect(() => () => { if (saveTimer.current) window.clearTimeout(saveTimer.current); }, []);
 
@@ -76,10 +96,10 @@ export function UmlEditor() {
         <div className="ml-auto flex items-center gap-1.5"><Button variant="ghost" size="sm" onClick={() => setChatOpen((open) => !open)}><Sparkles className="h-4 w-4" /> AI Assistant</Button><Button variant="ghost" size="sm"><Share2 className="h-4 w-4" /> Share</Button><Button size="sm" onClick={() => { void persistDiagram(diagram); setSaved(true); }}><Save className="h-4 w-4" /> Save</Button><button className="hidden h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white sm:flex" aria-label="User account">U</button></div>
       </header>
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col"><div className="flex border-b border-slate-200 p-2"><button className={cn('flex-1 rounded-md px-2 py-1.5 text-xs font-semibold', libraryTab === 'shapes' && 'bg-slate-900 text-white')} onClick={() => setLibraryTab('shapes')}>Shapes</button><button className={cn('flex-1 rounded-md px-2 py-1.5 text-xs font-semibold', libraryTab === 'templates' && 'bg-slate-900 text-white')} onClick={() => setLibraryTab('templates')}>Templates</button></div><div className="min-h-0 flex-1">{libraryTab === 'shapes' ? <ShapeLibrary /> : <TemplatePanel />}</div><div className="border-t border-slate-200 p-2"><Button variant="accent" size="sm" className="w-full" onClick={() => setGenerateOpen(true)}><Sparkles className="h-3.5 w-3.5" /> Generate with AI</Button></div></aside>
-        <main className="relative min-w-0 flex-1"><ReactFlowProvider><EditorCanvas /></ReactFlowProvider><div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-slate-200 bg-white/95 px-2 py-1.5 shadow-soft lg:hidden"><Button size="sm" variant="accent" onClick={() => setGenerateOpen(true)}><Sparkles className="h-3.5 w-3.5" /> AI</Button><Button size="sm" variant="ghost" onClick={() => setLibraryTab('shapes')}><Download className="h-3.5 w-3.5" /> Shapes</Button></div></main>
+        <aside className={cn('absolute inset-y-0 left-0 z-30 w-full max-w-[390px] shrink-0 border-r border-slate-200 bg-white shadow-lift xl:static xl:z-auto xl:flex xl:flex-col xl:w-[390px] xl:max-w-none xl:shadow-none', mobileLibraryOpen ? 'flex flex-col' : 'hidden')}><div className="flex shrink-0 items-center border-b border-slate-200 px-3 py-2"><div className="flex min-w-0 flex-1 gap-1 rounded-lg bg-slate-100 p-1"><button className={cn('flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors', libraryTab === 'shapes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800')} onClick={() => setLibraryTab('shapes')}>Shapes</button><button className={cn('flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors', libraryTab === 'templates' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800')} onClick={() => setLibraryTab('templates')}>Templates</button></div><button className="ml-2 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 xl:hidden" onClick={() => setMobileLibraryOpen(false)} aria-label="Close library"><X className="h-4 w-4" /></button></div><div className="min-h-0 flex-1">{libraryTab === 'shapes' ? <ShapeLibrary /> : <TemplatePanel />}</div><div className="shrink-0 border-t border-slate-200 p-3"><Button variant="accent" size="sm" className="w-full" onClick={() => setGenerateOpen(true)}><Sparkles className="h-3.5 w-3.5" /> Generate with AI</Button></div></aside>
+        <main className="relative min-w-0 flex-1"><ReactFlowProvider><EditorCanvas /></ReactFlowProvider><div className="absolute inset-y-0 left-0 z-10 flex w-16 flex-col justify-end bg-slate-900 xl:hidden"><button onClick={() => { setLibraryTab('shapes'); setMobileLibraryOpen(true); }} className="flex h-14 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-white"><Box className="h-4 w-4" />Shapes</button></div><button onClick={() => { setLibraryTab('templates'); setMobileLibraryOpen(true); }} className="absolute bottom-0 left-16 z-10 flex h-14 items-center gap-1 bg-white px-3 text-[10px] font-semibold text-slate-800 shadow-sm xl:hidden"><LayoutTemplate className="h-3.5 w-3.5" />Templates</button><div className="absolute bottom-3 right-3 z-10 xl:hidden"><Button size="sm" variant="accent" onClick={() => setGenerateOpen(true)}><Sparkles className="h-3.5 w-3.5" /> AI</Button></div></main>
         <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-slate-200 bg-white md:block"><PropertiesPanel /></aside>
-        {chatOpen && <aside className="fixed inset-y-14 right-0 z-30 w-80 border-l border-slate-200 bg-white shadow-lift md:absolute md:inset-y-14"><AIChat diagram={normalizeDiagram(diagram)} collapsed={false} /></aside>}
+        {chatOpen && <aside className="fixed inset-y-14 right-0 z-30 w-80 border-l border-slate-200 bg-white shadow-lift md:absolute md:inset-y-14"><AIChat diagram={normalizeDiagram(diagram)} collapsed={false} onDiagramChange={(next) => loadDiagram(normalizeDiagram(next))} /></aside>}
       </div>
       <GenerateModal open={generateOpen} onClose={() => setGenerateOpen(false)} onGenerated={(next) => { loadDiagram(normalizeDiagram(next)); setGenerateOpen(false); }} />
     </div>

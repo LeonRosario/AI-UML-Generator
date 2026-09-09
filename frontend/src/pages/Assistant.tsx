@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bot, Send, Sparkles, User } from 'lucide-react';
-import { sendChatMessage } from '@/services/ai';
-import { CLASS_SMS } from '@/data/diagrams';
 import type { ChatMessage } from '@/types';
 import { Button } from '@/components/ui/Button';
 
@@ -32,8 +30,7 @@ export function AssistantPage() {
     setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', content: prompt, timestamp: new Date().toISOString() }]);
     setLoading(true);
     try {
-      const reply = await sendChatMessage(prompt, CLASS_SMS);
-      setMessages((m) => [...m, { id: `a-${Date.now()}`, role: 'assistant', content: reply.message, timestamp: new Date().toISOString() }]);
+      setMessages((m) => [...m, { id: `a-${Date.now()}`, role: 'assistant', content: 'To analyze or modify a diagram, open that diagram in the editor and use its AI Assistant. The editor sends the complete current graph to the configured backend AI provider.', timestamp: new Date().toISOString() }]);
     } finally {
       setLoading(false);
     }
@@ -41,9 +38,15 @@ export function AssistantPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">AI Assistant</h1>
-        <p className="mt-1 text-sm text-slate-500">Generate, explain and improve diagrams with natural language.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">AI Assistant</h1>
+          <p className="mt-1 text-sm text-slate-500">Open a diagram to use AI generation, explanation, and editing with its full graph context.</p>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg bg-indigo-50/80 px-3 py-1.5 border border-indigo-100 shadow-sm">
+          <Sparkles className="h-4 w-4 text-indigo-600 animate-pulse" />
+          <span className="text-xs font-semibold text-indigo-700">AI is available in the editor</span>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft">

@@ -2,7 +2,7 @@ import { useMemo, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bot, Send, Sparkles, User } from 'lucide-react';
 import type { ChatMessage } from '@/types';
-import { explainDiagram, findIssues, improveDiagram, sendChatMessage } from '@/services/ai';
+import { aiExplainDiagram, aiModifyDiagram } from '@/lib/editor/api';
 import { useToast } from '@/components/ui/Toast';
 import type { Diagram } from '@/types';
 
@@ -15,7 +15,7 @@ const QUICK_ACTIONS_DATA = [
   { label: 'Improve Diagram', prompt: '__improve__' },
 ];
 
-export function AIChat({ diagram, collapsed }: { diagram: Diagram; collapsed: boolean }) {
+export function AIChat({ diagram, collapsed, onDiagramChange }: { diagram: Diagram; collapsed: boolean; onDiagramChange?: (diagram: Diagram) => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'greet',
@@ -48,23 +48,29 @@ export function AIChat({ diagram, collapsed }: { diagram: Diagram; collapsed: bo
     setLoading(true);
     try {
       if (prompt === '__explain__') {
-        const reply = await explainDiagram(diagram);
-        push('assistant', reply);
+        const reply = await aiExplainDiagram(diagram);
+        push('assistant', `${reply.overview}\n\n${reply.architecture}\n\nSuggestions: ${reply.suggestions.join(' · ')}`);
       } else if (prompt === '__issues__') {
-        const reply = await findIssues(diagram);
-        push('assistant', reply);
+        const reply = await aiExplainDiagram(diagram);
+        push('assistant', reply.problems.length ? reply.problems.join('\n') : 'No structural issues were reported by the AI.');
       } else if (prompt === '__improve__') {
-        const reply = await improveDiagram(diagram);
-        push('assistant', reply);
+        const reply = await aiModifyDiagram('Improve the diagram by resolving the structural issues you identify.', diagram);
+        onDiagramChange?.({ ...diagram, nodes: reply.nodes, edges: reply.edges, updatedAt: new Date().toISOString() });
+        push('assistant', reply.message);
         setUsedCount((c) => c + 1);
         toast('success', 'Diagram improved by AI');
       } else {
-        const reply = await sendChatMessage(prompt, diagram);
+        const reply = await aiModifyDiagram(prompt, diagram);
+        onDiagramChange?.({ ...diagram, nodes: reply.nodes, edges: reply.edges, updatedAt: new Date().toISOString() });
         push('assistant', reply.message);
         if (reply.applied?.length) {
           push('assistant', `Applied: ${reply.applied.join(' · ')}`);
         }
       }
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'AI request failed.';
+      push('assistant', `Unable to complete that request: ${message}`);
+      toast('error', message);
     } finally {
       setLoading(false);
     }

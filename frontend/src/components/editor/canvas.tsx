@@ -65,6 +65,7 @@ export function EditorCanvas({
 
   const { screenToFlowPosition, fitView } = useReactFlow();
   const dropRef = useRef<HTMLDivElement>(null);
+  const clickInsertCount = useRef(0);
 
   const nodeTypes = useMemo(() => EDITOR_NODE_TYPES, []);
   const edgeTypes = useMemo(() => ({ 'uml-edge': RelationshipEdge }), []);
@@ -83,8 +84,14 @@ export function EditorCanvas({
     const el = dropRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const pos = screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    // A sequence of click-insertions should form a discoverable board, not a
+    // stack of indistinguishable nodes at precisely the same center point.
+    const index = clickInsertCount.current++;
+    const column = (index % 4) - 1.5;
+    const row = Math.floor(index / 4) % 3 - 1;
+    const pos = screenToFlowPosition({ x: rect.left + rect.width / 2 + column * 190, y: rect.top + rect.height / 2 + row * 130 });
     addNode(addAtCenter.type, pos);
+    window.dispatchEvent(new CustomEvent('umlforge:shape-inserted', { detail: addAtCenter.type }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addAtCenter]);
 
@@ -110,6 +117,7 @@ export function EditorCanvas({
       if (!raw) return;
       const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
       addNode(raw, position);
+      window.dispatchEvent(new CustomEvent('umlforge:shape-inserted', { detail: raw }));
     },
     [addNode, screenToFlowPosition],
   );

@@ -5,8 +5,15 @@ import { Button } from '@/components/ui/Button';
 import { Field, Select, Textarea } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
-import { generateDiagram, GENERATION_STAGES, type GenerationStage } from '@/services/ai';
+import { aiGenerateDiagram } from '@/lib/editor/api';
 import type { Diagram, DiagramType } from '@/types';
+
+export type GenerationStage = { label: string; progress: number };
+const GENERATION_STAGES: GenerationStage[] = [
+  { label: 'Contacting AI provider…', progress: 15 },
+  { label: 'Validating response…', progress: 60 },
+  { label: 'Laying out elements…', progress: 90 },
+];
 
 export function GenerateModal({
   open,
@@ -20,18 +27,26 @@ export function GenerateModal({
   const [type, setType] = useState<DiagramType>('use-case');
   const [requirements, setRequirements] = useState('');
   const [stage, setStage] = useState<GenerationStage | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (open) {
       setRequirements('');
       setStage(null);
+      setError('');
     }
   }, [open]);
 
   const run = async () => {
-    setStage(GENERATION_STAGES[0]);
-    const diagram = await generateDiagram(requirements, type, setStage);
-    onGenerated(diagram);
+    setStage({ label: 'Contacting AI provider…', progress: 15 });
+    setError('');
+    try {
+      const result = await aiGenerateDiagram(requirements, type, (label, progress) => setStage({ label, progress }));
+      onGenerated(result.diagram);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to generate the diagram.');
+      setStage(null);
+    }
   };
 
   const generating = stage !== null;
@@ -43,9 +58,13 @@ export function GenerateModal({
         if (!generating) onClose();
       }}
       title="Generate a UML Diagram"
-      description="Describe your system and let AI build the diagram."
+      description="Describe your system and let the configured AI provider build the diagram."
       className="max-w-xl"
     >
+      <div className="mb-4 flex items-center gap-2 rounded-lg bg-indigo-50/80 px-3 py-2 border border-indigo-100">
+        <Sparkles className="h-4 w-4 text-indigo-600" />
+        <span className="text-xs font-semibold text-indigo-700">AI generation uses your configured backend provider.</span>
+      </div>
       {generating ? (
         <div className="flex flex-col items-center py-8">
           <div className="relative mb-6 flex h-16 w-16 items-center justify-center">
@@ -53,7 +72,8 @@ export function GenerateModal({
             <Sparkles className="h-6 w-6 text-indigo-500" />
           </div>
           <ul className="w-full max-w-xs space-y-3">
-            {GENERATION_STAGES.map((s) => {
+            {['Contacting AI provider…', 'Validating response…', 'Laying out elements…'].map((label, index) => {
+              const s = { label, progress: (index + 1) * 33 };
               const done = (GENERATION_STAGES.indexOf(s) < GENERATION_STAGES.indexOf(stage));
               const current = s.label === stage.label;
               return (
@@ -67,7 +87,7 @@ export function GenerateModal({
                           : 'border-slate-200 bg-slate-50 text-slate-300'
                     }`}
                   >
-                    {done ? '✓' : GENERATION_STAGES.indexOf(s) + 1}
+                    {done ? '✓' : index + 1}
                   </span>
                   <span
                     className={`text-sm ${done ? 'text-slate-500' : current ? 'font-medium text-slate-900' : 'text-slate-300'}`}
@@ -83,6 +103,7 @@ export function GenerateModal({
       ) : (
         <>
           <div className="space-y-4">
+            {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
             <Field label="Diagram type">
               <Select value={type} onChange={(e) => setType(e.target.value as DiagramType)}>
                 {(Object.keys(DIAGRAM_TYPE_LABELS) as DiagramType[]).map((t) => (

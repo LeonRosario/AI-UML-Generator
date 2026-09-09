@@ -1,0 +1,34 @@
+# Core dependencies
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-dotenv==1.0.1
+
+# Database
+sqlalchemy==2.0.36
+aiosqlite==0.20.0      # Required for SQLite (default dev mode)
+greenlet==3.1.1        # Required by SQLAlchemy async mode
+alembic==1.14.0
+
+# asyncpg for PostgreSQL (optional — only needed if using PostgreSQL)
+# Install separately: pip install asyncpg
+# asyncpg requires Microsoft C++ Build Tools on Windows:
+#   https://visualstudio.microsoft.com/visual-cpp-build-tools/
+
+# Auth / Security
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.1
+
+# Pydantic
+pydantic==2.10.3
+pydantic-settings==2.6.1
+email-validator==2.2.0
+
+# AI Providers
+google-generativeai==0.8.3
+openai==1.58.1
+httpx==0.28.1
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0

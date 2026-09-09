@@ -25,11 +25,26 @@ export type DiagramMeta = {
   saved?: boolean;
 };
 
+const TOKEN_KEY = 'auth:token';
+
+function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
+}
+
 async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getStoredToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers,
   });
   const body = (await response.json().catch(() => ({}))) as { detail?: string } & T;
   if (!response.ok) throw new Error(body.detail ?? 'Request failed.');
@@ -58,11 +73,7 @@ function metaOf(diagram: Diagram): DiagramMeta {
 
 export async function fetchDiagrams(): Promise<DiagramMeta[]> {
   if (API_URL) {
-    try {
-      return await api<DiagramMeta[]>('/diagrams');
-    } catch {
-      /* fall through to local */
-    }
+    return api<DiagramMeta[]>('/diagrams');
   }
   return index().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
@@ -72,7 +83,10 @@ export async function fetchDiagram(id: string): Promise<Diagram | null> {
     try {
       return normalizeDiagram(await api<Diagram>(`/diagrams/${id}`));
     } catch {
-      /* fall through to local */
+      // A local editor session must remain recoverable when its API server is
+      // temporarily unavailable (for example while developing offline).
+      const local = loadJSON<Diagram | null>(`${DIAGRAM_PREFIX}${id}`, null);
+      return local ? normalizeDiagram(local) : null;
     }
   }
   const raw = loadJSON<Diagram | null>(`${DIAGRAM_PREFIX}${id}`, null);
@@ -80,21 +94,26 @@ export async function fetchDiagram(id: string): Promise<Diagram | null> {
 }
 
 export async function persistDiagram(diagram: Diagram): Promise<void> {
-  if (API_URL) {
-    await api(`/diagrams/${diagram.id}`, { method: 'PUT', body: JSON.stringify(diagram) });
-  }
-  saveJSON(`${DIAGRAM_PREFIX}${diagram.id}`, normalizeDiagram(diagram));
+  // Persist locally first. This is the recovery source for an interrupted or
+  // unavailable backend request and prevents a refresh from discarding work.
+  const normalized = normalizeDiagram(diagram);
+  saveJSON(`${DIAGRAM_PREFIX}${diagram.id}`, normalized);
   const list = index().filter((m) => m.id !== diagram.id);
-  persistIndex([metaOf(diagram), ...list]);
+  persistIndex([metaOf(normalized), ...list]);
+
+  if (API_URL) {
+    try {
+      await api(`/diagrams/${diagram.id}`, { method: 'PUT', body: JSON.stringify(normalized) });
+    } catch {
+      // Local persistence above is deliberate offline resilience. A later save
+      // will retry the API without making the user's diagram disappear.
+    }
+  }
 }
 
 export async function removeDiagram(id: string): Promise<void> {
   if (API_URL) {
-    try {
-      await api(`/diagrams/${id}`, { method: 'DELETE' });
-    } catch {
-      /* continue to local cleanup */
-    }
+    await api(`/diagrams/${id}`, { method: 'DELETE' });
   }
   removeKey(`${DIAGRAM_PREFIX}${id}`);
   persistIndex(index().filter((m) => m.id !== id));

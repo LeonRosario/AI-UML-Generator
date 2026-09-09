@@ -8,8 +8,8 @@ import { EditorNodeShell, InlineLabel, NodeHandles, nodeStyle } from './shared';
 export function ActorFigure({ className, color }: { className?: string; color?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} style={color ? { color } : undefined} aria-hidden="true">
-      <circle cx="12" cy="4.5" r="3.2" fill="currentColor" />
-      <path d="M12 8.5c-4.4 0-6.5 3.4-6.5 6.5 1.8-.4 3-1.2 3-3 0 1.8 1.6 3 3.5 3s3.5-1.2 3.5-3c0 1.8 1.2 2.6 3 3 0-3.1-2.1-6.5-6.5-6.5z" fill="currentColor" />
+      <circle cx="12" cy="4" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7v8M5 10.5h14M12 15l-5 6M12 15l5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
