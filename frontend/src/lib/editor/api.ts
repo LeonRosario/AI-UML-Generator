@@ -93,7 +93,7 @@ export async function fetchDiagram(id: string): Promise<Diagram | null> {
   return raw ? normalizeDiagram(raw) : null;
 }
 
-export async function persistDiagram(diagram: Diagram): Promise<void> {
+export async function persistDiagram(diagram: Diagram): Promise<boolean> {
   // Persist locally first. This is the recovery source for an interrupted or
   // unavailable backend request and prevents a refresh from discarding work.
   const normalized = normalizeDiagram(diagram);
@@ -107,8 +107,10 @@ export async function persistDiagram(diagram: Diagram): Promise<void> {
     } catch {
       // Local persistence above is deliberate offline resilience. A later save
       // will retry the API without making the user's diagram disappear.
+      return false;
     }
   }
+  return true;
 }
 
 export async function removeDiagram(id: string): Promise<void> {
