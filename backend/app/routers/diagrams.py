@@ -47,7 +47,7 @@ async def save_diagram(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Create or update a diagram.  The frontend sends the full Diagram object."""
-    payload = body.model_dump(mode="python")
+    payload = body.model_dump(mode="json")
     # Ensure the ID in the body matches the URL parameter
     payload["id"] = diagram_id
     return await diagram_service.save_diagram(

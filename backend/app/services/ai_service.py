@@ -17,6 +17,9 @@ import logging
 import re
 import textwrap
 import asyncio
+from datetime import date
+from pydantic import ValidationError
+from app.schemas.gantt import GanttChart
 from typing import Any
 
 from app.config import get_settings
@@ -41,6 +44,10 @@ DIAGRAM_TYPE_LABELS: dict[str, str] = {
     "state": "State Diagram",
     "component": "Component Diagram",
     "deployment": "Deployment Diagram",
+    "flowchart": "Flowchart",
+    "network": "Network Diagram",
+    "architecture": "Cloud / System Architecture Diagram",
+    "gantt": "Gantt Chart",
 }
 
 # Keep AI output constrained to node types that the React Flow editor registers.
@@ -98,6 +105,9 @@ Node type guide:
 - ER diagram       → "databaseNode"        data: {{name, fields: ["id: int (PK)"]}}
 - State diagram    → "umlNode"             data: {{name}}
 - Component        → "componentNode"       data: {{name}}
+- Flowchart        → "flowProcessNode", "flowDecisionNode", "flowTerminatorNode", "flowInputOutputNode", "flowDocumentNode", "flowDatabaseNode", "flowConnectorNode", "flowOffPageNode"; label decision edges Yes/No and use standard flowchart notation.
+- Network          → "networkRouterNode", "networkSwitchNode", "networkFirewallNode", "networkServerNode", "networkClientNode", "networkCloudNode"; model topology, security boundaries and label protocols.
+- Architecture     → "archApiNode", "archCacheNode", "archQueueNode", "archServiceNode", "archGatewayNode", "archServerNode", "archClientNode", "archCloudNode", "cloudComputeNode", "cloudStorageNode", "cloudNetworkNode", "cloudMonitoringNode"; model service and data flows, label interfaces.
 - Deployment       → "umlNode"             data: {{name, stereotype: "server"|"device"|"service"}}
 
 Relationship types: "association", "directed-association", "inheritance", "composition",
@@ -263,6 +273,15 @@ def _safe_str(v: Any, default: str = "") -> str:
 
 def _validate_generate_response(data: dict[str, Any], diagram_type: str) -> GenerateDiagramResponse:
     """Validate and normalise the AI-generated diagram JSON."""
+    if diagram_type == "gantt":
+        try:
+            chart = GanttChart.model_validate(data.get("gantt"))
+            if not chart.tasks:
+                raise ValueError("AI returned an empty schedule")
+        except (ValidationError, ValueError) as exc:
+            raise AIProviderError("AI returned an invalid Gantt schedule: check dates, durations and dependencies.") from exc
+        return GenerateDiagramResponse(name=_safe_str(data.get("name"), "Project schedule"),
+                                       type="gantt", nodes=[], edges=[], gantt=chart)
     if "nodes" not in data or not isinstance(data["nodes"], list):
         raise AIProviderError("AI response missing 'nodes' array.")
     if "edges" not in data or not isinstance(data["edges"], list):
@@ -343,6 +362,8 @@ async def generate_diagram(requirements: str, diagram_type: str) -> GenerateDiag
         _GENERATE_SYSTEM.format(diagram_type=type_label, type_key=diagram_type)
         + f"\n\nRequirements:\n{requirements}"
     )
+    if diagram_type == "gantt":
+        prompt = _gantt_prompt() + f"\n\nRequirements:\n{requirements}"
     raw = await _call_ai(prompt)
     data = _extract_json(raw)
     return _validate_generate_response(data, diagram_type)
@@ -352,14 +373,18 @@ async def modify_diagram(instructions: str, diagram: dict[str, Any]) -> ModifyDi
     """Apply natural language modifications to an existing diagram."""
     diagram_json = json.dumps(diagram, indent=2)
     prompt = (
-        _MODIFY_SYSTEM
+        (_gantt_prompt() + "\nReturn complete updated gantt plus applied (string array) and message. Preserve unchanged task IDs. Reschedule successors when dates change." if diagram.get("type") == "gantt" else _MODIFY_SYSTEM)
         + f"\n\nInstruction:\n{instructions}"
         + f"\n\nExisting diagram JSON:\n{diagram_json}"
     )
     raw = await _call_ai(prompt)
     data = _extract_json(raw)
 
+    chart = None
+    if diagram.get("type") == "gantt":
+        chart = _validate_generate_response(data, "gantt").gantt
     return ModifyDiagramResponse(
+        gantt=chart,
         nodes=data.get("nodes", diagram.get("nodes", [])),
         edges=data.get("edges", diagram.get("edges", [])),
         applied=data.get("applied", []),
@@ -373,7 +398,7 @@ async def modify_diagram(instructions: str, diagram: dict[str, Any]) -> ModifyDi
 async def explain_diagram(diagram: dict[str, Any]) -> ExplainDiagramResponse:
     """Analyze a diagram and return a structured explanation."""
     diagram_json = json.dumps(diagram, indent=2)
-    prompt = _EXPLAIN_SYSTEM + f"\n\nDiagram JSON:\n{diagram_json}"
+    prompt = _EXPLAIN_SYSTEM + ("\nThis is a Gantt schedule. Explain tasks as entities, dependencies as relationships, ownership, milestones, progress and scheduling risks. Do not report missing graph nodes." if diagram.get("type") == "gantt" else "") + f"\n\nDiagram JSON:\n{diagram_json}"
     raw = await _call_ai(prompt)
     data = _extract_json(raw)
 
@@ -385,3 +410,18 @@ async def explain_diagram(diagram: dict[str, Any]) -> ExplainDiagramResponse:
         problems=data.get("problems", []),
         suggestions=data.get("suggestions", []),
     )
+
+
+def _gantt_prompt() -> str:
+    return """You are a project scheduling assistant. Turn the requirements into a realistic, nonempty schedule.
+Return ONLY JSON with name, type: "gantt", nodes: [], edges: [], gantt: {tasks: [...]}.
+Each task has id (unique string), name, start (YYYY-MM-DD), duration (integer calendar days),
+assignee (person/team or Unassigned), progress (integer 0-100), milestone (boolean),
+dependencies (array of predecessor task IDs, finish-to-start).
+Regular tasks have duration >= 1. Milestones are diamonds with duration 0.
+Respect explicit dates, durations, owners and dependencies in the request. Infer reasonable estimates
+when missing and break the project into meaningful tasks. Include a completion milestone.
+No dependency cycles or unknown references. Start each task on or after every predecessor's exclusive
+end date (start + duration). Parallel independent work may overlap. Use at most 60 tasks and ten years.
+Preserve the schedule schema during edits. Never convert tasks into graph nodes.
+Today's date: """ + date.today().isoformat()

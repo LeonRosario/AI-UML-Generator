@@ -33,6 +33,8 @@ def _diagram_to_out(d, include_data: bool = True) -> dict[str, Any]:
     if include_data:
         result["nodes"] = data.get("nodes", [])
         result["edges"] = data.get("edges", [])
+        for key in ("gantt", "layers", "preferences"):
+            result[key] = data.get(key)
     return result
 
 
@@ -66,6 +68,7 @@ async def save_diagram(
     data = {
         "nodes": payload.get("nodes", []),
         "edges": payload.get("edges", []),
+        **{key: payload.get(key) for key in ("gantt", "layers", "preferences")},
     }
     d = await diagram_repo.upsert(
         db,

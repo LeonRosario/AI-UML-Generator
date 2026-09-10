@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from pydantic import BaseModel, field_validator
+from app.schemas.gantt import GanttChart
 
 DiagramType = Literal[
-    "use-case", "class", "sequence", "activity", "er", "state", "component", "deployment"
+    "use-case", "class", "sequence", "activity", "er", "state", "component", "deployment", "flowchart", "network", "architecture", "gantt"
 ]
 
 
@@ -54,6 +55,7 @@ class GenerateDiagramResponse(BaseModel):
     type: str
     nodes: list[AiNodePayload]
     edges: list[AiEdgePayload]
+    gantt: GanttChart | None = None
 
 
 # ── Modify diagram ────────────────────────────────────────────────────────────
@@ -70,6 +72,7 @@ class ModifyDiagramResponse(BaseModel):
     """
     nodes: list[dict[str, Any]]
     edges: list[dict[str, Any]]
+    gantt: GanttChart | None = None
     applied: list[str]
     message: str
 

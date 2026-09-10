@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.schemas.gantt import GanttChart
+
 from pydantic import BaseModel
 
 
@@ -47,6 +49,7 @@ class DiagramEdge(BaseModel):
 
 # ── Diagram payload ───────────────────────────────────────────────────────────
 
+
 class DiagramIn(BaseModel):
     """
     Full diagram sent by the frontend for saving (PUT /diagrams/{id}).
@@ -60,6 +63,9 @@ class DiagramIn(BaseModel):
     createdAt: str | None = None
     updatedAt: str | None = None
     ownerId: str | None = None
+    gantt: GanttChart | None = None
+    layers: list[dict[str, Any]] | None = None
+    preferences: dict[str, Any] | None = None
 
     model_config = {"extra": "allow"}
 
@@ -77,6 +83,9 @@ class DiagramOut(BaseModel):
     createdAt: str
     updatedAt: str
     ownerId: str | None = None
+    gantt: GanttChart | None = None
+    layers: list[dict[str, Any]] | None = None
+    preferences: dict[str, Any] | None = None
 
     model_config = {"from_attributes": True}
 
