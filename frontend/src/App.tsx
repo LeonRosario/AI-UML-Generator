@@ -6,7 +6,6 @@ import { Landing } from '@/pages/Landing';
 import { Dashboard } from '@/pages/Dashboard';
 import { Projects } from '@/pages/Projects';
 import { Templates } from '@/pages/Templates';
-import { Editor } from '@/pages/Editor';
 import { Settings } from '@/pages/Settings';
 import { AssistantPage } from '@/pages/Assistant';
 import { Recent } from '@/pages/Recent';
@@ -45,7 +44,7 @@ export default function App() {
               <Route path="recent" element={<Page><Recent /></Page>} />
               <Route path="settings" element={<Page><Settings /></Page>} />
             </Route>
-            <Route path="/app/editor/:projectId" element={<Editor />} />
+            <Route path="/app/editor/:projectId" element={<UmlEditor />} />
             <Route path="/app/editor" element={<Navigate to="/app/editor/new" replace />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -29,6 +29,10 @@ const TYPE_HEADINGS: Record<DiagramType, string> = {
   state: 'State Diagram',
   component: 'Component Diagram',
   deployment: 'Deployment Diagram',
+  flowchart: 'Flowchart',
+  network: 'Network Diagram',
+  architecture: 'Cloud / System Architecture',
+  gantt: 'Gantt Chart',
 };
 
 export function buildPlantUml(diagram: Diagram): string {

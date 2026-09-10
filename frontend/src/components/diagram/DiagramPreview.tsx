@@ -1,3 +1,4 @@
+import { GanttTimeline } from '@/components/editor/gantt-editor';
 import { useMemo } from 'react';
 import type { Diagram } from '@/types';
 import { cn } from '@/lib/cn';
@@ -152,6 +153,7 @@ export function DiagramPreview({ diagram, className, empty = false }: { diagram?
     return { content, viewBox: vb };
   }, [diagram, empty]);
 
+  if (diagram?.type === 'gantt' && diagram.gantt) return <div className={cn('h-full w-full overflow-hidden [&>svg]:h-full [&>svg]:w-full', className)}><GanttTimeline chart={diagram.gantt} scale={12} /></div>;
   return (
     <svg viewBox={viewBox} preserveAspectRatio="xMidYMid meet" className={cn('h-full w-full', className)}>
       <rect x="0" y="0" width="100%" height="100%" fill="transparent" />

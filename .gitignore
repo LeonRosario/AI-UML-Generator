@@ -48,3 +48,13 @@ Thumbs.db
 
 # Misc
 *.local
+
+# Python generated files
+__pycache__/
+*.pyc
+
+# Local database
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+

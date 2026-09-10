@@ -285,7 +285,7 @@ function ClassNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
       )}
 
       {editingRow === null && (
-        <div className="border-t border-dashed px-2 py-1 text-center" style={{ borderColor: data.borderColor ?? '#e2e8f0' }}>
+        <div data-editor-only className="border-t border-dashed px-2 py-1 text-center" style={{ borderColor: data.borderColor ?? '#e2e8f0' }}>
           <span className="text-[10px] text-slate-400">double-click rows to edit</span>
         </div>
       )}

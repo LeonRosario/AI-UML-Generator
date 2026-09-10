@@ -88,7 +88,7 @@ function MemberListEditor({
   kind: 'attribute' | 'method';
   onCommit: (rows: MemberRow[]) => void;
 }) {
-  const [draft, setDraft] = useState<MemberRow | null>(null);
+  const [newRowId, setNewRowId] = useState<string>();
 
   const update = (index: number, patch: Partial<MemberRow>) => {
     onCommit(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -100,18 +100,11 @@ function MemberListEditor({
     const row: MemberRow = {
       id: `new-${Date.now()}`,
       visibility: kind === 'attribute' ? '-' : '+',
-      name: '',
+      name: kind === 'attribute' ? 'newAttribute' : 'newMethod',
       ...(kind === 'attribute' ? { type: 'string' } : { params: '', returnType: 'void' }),
     };
     onCommit([...rows, row]);
-    setDraft(row);
-  };
-
-  const commitDraft = () => {
-    if (draft && draft.name.trim()) {
-      onCommit(rows.map((r) => (r.id === draft.id ? draft : r)));
-    }
-    setDraft(null);
+    setNewRowId(row.id);
   };
 
   return (
@@ -119,6 +112,7 @@ function MemberListEditor({
       <div className="mb-1 flex items-center justify-between">
         <p className="text-[12px] font-medium text-slate-700">{title}</p>
         <button
+          aria-label={`Add ${kind}`}
           onClick={add}
           className="flex items-center gap-0.5 rounded-md border border-slate-200 px-1.5 py-0.5 text-[11px] font-medium text-indigo-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50"
         >
@@ -129,6 +123,7 @@ function MemberListEditor({
         {rows.map((row, i) => (
           <div key={row.id} className="flex items-center gap-1">
             <select
+              aria-label={`${kind} visibility ${i + 1}`}
               value={row.visibility}
               onChange={(e) => update(i, { visibility: e.target.value as Visibility })}
               className="h-6.5 w-9 shrink-0 rounded border border-slate-200 bg-slate-50 px-0.5 font-mono text-[11px] text-slate-600"
@@ -142,7 +137,10 @@ function MemberListEditor({
             <input
               value={row.name}
               onChange={(e) => update(i, { name: e.target.value })}
-              onBlur={() => setDraft(null)}
+              autoFocus={row.id === newRowId}
+              onFocus={e => { if (row.id === newRowId) e.target.select(); }}
+              onBlur={() => setNewRowId(undefined)}
+              aria-label={`${kind} name ${i + 1}`}
               className="h-6.5 min-w-0 flex-1 rounded border border-slate-200 bg-white px-1.5 font-mono text-[11px] text-slate-700 focus:border-indigo-400 focus:outline-none"
               placeholder="name"
             />
@@ -155,6 +153,7 @@ function MemberListEditor({
               />
             )}
             <input
+              aria-label={`${kind} type ${i + 1}`}
               value={kind === 'attribute' ? (row.type ?? '') : (row.returnType ?? '')}
               onChange={(e) => update(i, kind === 'attribute' ? { type: e.target.value } : { returnType: e.target.value })}
               className="h-6.5 w-14 rounded border border-slate-200 bg-white px-1 font-mono text-[10px] text-slate-500 focus:border-indigo-400 focus:outline-none"
@@ -169,46 +168,7 @@ function MemberListEditor({
             </button>
           </div>
         ))}
-        {draft && (
-          <div className="flex items-center gap-1">
-            <select
-              value={draft.visibility}
-              onChange={(e) => setDraft({ ...draft, visibility: e.target.value as Visibility })}
-              className="h-6.5 w-9 shrink-0 rounded border border-indigo-300 bg-indigo-50 px-0.5 font-mono text-[11px]"
-            >
-              <option value="+">+</option>
-              <option value="-">-</option>
-              <option value="#">#</option>
-              <option value="~">~</option>
-            </select>
-            <input
-              autoFocus
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              onBlur={commitDraft}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitDraft();
-                if (e.key === 'Escape') setDraft(null);
-              }}
-              className="h-6.5 min-w-0 flex-1 rounded border border-indigo-300 bg-white px-1.5 font-mono text-[11px] focus:outline-none"
-              placeholder="name"
-            />
-            {kind === 'method' && (
-              <input
-                value={draft.params ?? ''}
-                onChange={(e) => setDraft({ ...draft, params: e.target.value })}
-                className="h-6.5 w-14 rounded border border-slate-200 px-1 font-mono text-[10px]"
-                placeholder="args"
-              />
-            )}
-            <input
-              value={kind === 'attribute' ? (draft.type ?? '') : (draft.returnType ?? '')}
-              onChange={(e) => setDraft(kind === 'attribute' ? { ...draft, type: e.target.value } : { ...draft, returnType: e.target.value })}
-              className="h-6.5 w-14 rounded border border-slate-200 px-1 font-mono text-[10px]"
-              placeholder={kind === 'attribute' ? 'type' : 'return'}
-            />
-          </div>
-        )}
+
       </div>
     </div>
   );
@@ -406,6 +366,7 @@ function EdgeInspector({ edge }: { edge: Edge }) {
             ))}
           </Select>
         </SubRow>
+        <SubRow label="Routing"><Select value={String(edge.data?.routing ?? 'elbow')} onChange={e => updateEdge(edge.id, { data: { ...edge.data, routing: e.target.value } })}><option value="elbow">Elbow</option><option value="straight">Straight</option><option value="curved">Curved</option></Select></SubRow>
         <SubRow label="Label">
           <Input
             value={(edge.label as string) ?? ''}
@@ -466,7 +427,7 @@ function DiagramInspector() {
         </SubRow>
         <SubRow label="Type">
           <Select value={type} onChange={(e) => setType(e.target.value as DiagramType)} className="!h-7 !px-2 !text-[12px]">
-            {(Object.keys(DIAGRAM_TYPE_LABELS) as DiagramType[]).map((t) => (
+            {(Object.keys(DIAGRAM_TYPE_LABELS) as DiagramType[]).filter(t => (t === 'gantt') === (type === 'gantt')).map((t) => (
               <option key={t} value={t}>
                 {DIAGRAM_TYPE_LABELS[t]}
               </option>
@@ -522,13 +483,20 @@ function DiagramInspector() {
 /*  Panel entry                                                        */
 /* ------------------------------------------------------------------ */
 
+function GanttInspector() {
+  const state = useEditorStore();
+  return <div className="space-y-4 p-4 text-sm"><h2 className="font-semibold">Gantt chart</h2><label className="block text-xs">Name<Input value={state.name} onChange={e => state.setName(e.target.value)} /></label><p>{state.gantt?.tasks.length ?? 0} tasks and milestones</p><p className="text-xs leading-5 text-slate-500">Select a bar to edit its dates, owner, progress and predecessors. Durations use calendar days; finish dates are exclusive. Moving work later pushes dependent tasks forward.</p><p className="text-xs leading-5 text-slate-500">Focus a bar: ←/→ shifts one day, Shift+←/→ changes duration. Ctrl/⌘+Z undoes, Shift+Z redoes, S saves.</p></div>;
+}
+
 export function PropertiesPanel() {
+  const type = useEditorStore(s => s.type);
   const nodes = useEditorStore((s) => s.nodes);
   const edges = useEditorStore((s) => s.edges);
 
   const selectedNodes = useMemo(() => nodes.filter((n) => n.selected), [nodes]);
   const selectedEdges = useMemo(() => edges.filter((e) => e.selected), [edges]);
 
+  if (type === 'gantt') return <GanttInspector />;
   if (selectedNodes.length === 1) {
     return <NodeInspector key={selectedNodes[0].id} node={selectedNodes[0]} />;
   }

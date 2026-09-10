@@ -2,6 +2,7 @@ import type { Edge, Node } from '@xyflow/react';
 import type { Diagram, DiagramNode, DiagramType, Template } from '@/types';
 import { uid } from '@/data/diagrams';
 import { createUmlNode, inferDiagramType } from './node-types';
+import { validateGantt } from './gantt';
 import { autoLayout } from './layout-utils';
 
 /* ------------------------------------------------------------------ */
@@ -112,6 +113,7 @@ export function membersToStrings(rows: unknown, kind: 'attribute' | 'method'): s
 
 export function normalizeDiagram(diagram: Diagram): Diagram {
   const now = new Date().toISOString();
+  if (diagram.type === 'gantt') validateGantt(diagram.gantt ?? { tasks: [] });
   const nodes = (diagram.nodes ?? []).map((node) => {
     const data = node.data ?? {};
     return {
@@ -121,7 +123,7 @@ export function normalizeDiagram(diagram: Diagram): Diagram {
         ...data,
         nodeType: (data.nodeType as string) ?? node.type,
         type: (data.type as DiagramType) ?? inferDiagramType(node.type ?? ''),
-        label: (data.label as string) ?? 'Element',
+        label: (data.label as string) ?? (data.name as string) ?? 'Element',
         attributes: normalizeMemberList(data.attributes, 'attribute'),
         methods: normalizeMemberList(data.methods, 'method'),
         fields: Array.isArray(data.fields) ? data.fields.map(String) : [],
@@ -142,7 +144,7 @@ export function normalizeDiagram(diagram: Diagram): Diagram {
     edges: (diagram.edges ?? []).map((edge) => ({
       ...edge,
       type: 'uml-edge',
-      data: edge.data && typeof edge.data === 'object' ? edge.data : { relationship: (edge.data as { relationship?: string } | undefined)?.relationship ?? 'association' },
+      data: edge.data && typeof edge.data === 'object' ? edge.data : { relationship: (edge.data as { relationship?: string } | undefined)?.relationship ?? (edge.type !== 'uml-edge' && edge.type !== 'smoothstep' ? edge.type : 'association') },
     })),
     createdAt: diagram.createdAt || now,
     updatedAt: diagram.updatedAt || now,
@@ -158,7 +160,12 @@ export function serializeDiagram(diagram: Diagram): Record<string, unknown> {
     createdAt: diagram.createdAt,
     updatedAt: diagram.updatedAt,
     ownerId: diagram.ownerId,
+    gantt: diagram.gantt,
+    layers: diagram.layers,
+    preferences: diagram.preferences,
     nodes: diagram.nodes.map((node) => ({
+      ...node,
+      selected: false,
       id: node.id,
       type: node.type,
       position: node.position,
@@ -170,6 +177,8 @@ export function serializeDiagram(diagram: Diagram): Record<string, unknown> {
       },
     })),
     edges: diagram.edges.map((edge) => ({
+      ...edge,
+      selected: false,
       id: edge.id,
       source: edge.source,
       target: edge.target,
@@ -177,7 +186,7 @@ export function serializeDiagram(diagram: Diagram): Record<string, unknown> {
       ...(edge.targetHandle ? { targetHandle: edge.targetHandle } : {}),
       ...(edge.label ? { label: edge.label } : {}),
       type: 'uml-edge',
-      data: { relationship: (edge.data as { relationship?: string } | undefined)?.relationship ?? 'association' },
+      data: { ...edge.data, relationship: (edge.data as { relationship?: string } | undefined)?.relationship ?? (edge.type !== 'uml-edge' && edge.type !== 'smoothstep' ? edge.type : 'association') },
     })),
   };
 }
@@ -245,6 +254,9 @@ export function parseDiagramJson(raw: string): Diagram {
     createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ownerId: parsed.ownerId,
+    gantt: parsed.gantt,
+    layers: parsed.layers,
+    preferences: parsed.preferences,
   });
 }
 

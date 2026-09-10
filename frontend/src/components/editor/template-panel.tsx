@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { LayoutTemplate, Search } from 'lucide-react';
-import { TEMPLATES } from '@/data/templates';
+import { TEMPLATES, TEMPLATE_CATEGORIES } from '@/data/templates';
 import { DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
 import { templateToDiagram } from '@/lib/editor/diagram-utils';
 import { useEditorStore } from '@/store/editor-store';
@@ -8,14 +8,11 @@ import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/cn';
 
-const CATEGORIES = ['All', 'E-Commerce', 'Banking', 'Hospital', 'Library', 'Student Management', 'Food Delivery', 'Social Media', 'Authentication', 'Online Shopping'];
+const CATEGORIES = TEMPLATE_CATEGORIES;
 
-export function TemplatePanel() {
+export function TemplatePanel({ onApplied }: { onApplied?: () => void }) {
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
-  const replaceAll = useEditorStore((s) => s.replaceAll);
-  const setType = useEditorStore((s) => s.setType);
-  const setName = useEditorStore((s) => s.setName);
   const toast = useToast();
 
   const filtered = useMemo(() => {
@@ -32,9 +29,8 @@ export function TemplatePanel() {
     const template = TEMPLATES.find((t) => t.id === id);
     if (!template) return;
     const diagram = templateToDiagram(template);
-    replaceAll(diagram.nodes, diagram.edges);
-    setType(diagram.type);
-    setName(diagram.name);
+    useEditorStore.getState().applyDiagram(diagram);
+    onApplied?.();
     toast('success', `Loaded template "${template.name}" — everything is editable`);
   };
 

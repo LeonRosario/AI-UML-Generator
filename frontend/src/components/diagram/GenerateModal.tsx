@@ -5,33 +5,54 @@ import { Button } from '@/components/ui/Button';
 import { Field, Select, Textarea } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
-import { generateDiagram, GENERATION_STAGES, type GenerationStage } from '@/services/ai';
+import { aiGenerateDiagram } from '@/lib/editor/api';
 import type { Diagram, DiagramType } from '@/types';
+
+export type GenerationStage = { label: string; progress: number };
+const GENERATION_STAGES: GenerationStage[] = [
+  { label: 'Contacting AI provider…', progress: 15 },
+  { label: 'Validating response…', progress: 60 },
+  { label: 'Laying out elements…', progress: 90 },
+];
 
 export function GenerateModal({
   open,
   onClose,
   onGenerated,
+  initialType,
+  onTemplates,
 }: {
   open: boolean;
+  initialType?: DiagramType;
+  onTemplates?: () => void;
   onClose: () => void;
   onGenerated: (diagram: Diagram) => void;
 }) {
   const [type, setType] = useState<DiagramType>('use-case');
   const [requirements, setRequirements] = useState('');
   const [stage, setStage] = useState<GenerationStage | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (open) {
+      if (initialType) setType(initialType);
       setRequirements('');
       setStage(null);
+      setError('');
     }
-  }, [open]);
+  }, [open, initialType]);
 
   const run = async () => {
-    setStage(GENERATION_STAGES[0]);
-    const diagram = await generateDiagram(requirements, type, setStage);
-    onGenerated(diagram);
+    setStage({ label: 'Contacting AI provider…', progress: 15 });
+    setError('');
+    try {
+      const result = await aiGenerateDiagram(requirements, type, (label, progress) => setStage({ label, progress }));
+      onGenerated(result.diagram);
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'Unable to generate the diagram.';
+      setError(/not configured|API_KEY/i.test(message) ? 'AI generation is unavailable in this workspace. You can still build your assignment using templates or shapes. Ask the workspace owner to enable AI generation.' : message);
+      setStage(null);
+    }
   };
 
   const generating = stage !== null;
@@ -42,10 +63,14 @@ export function GenerateModal({
       onClose={() => {
         if (!generating) onClose();
       }}
-      title="Generate a UML Diagram"
-      description="Describe your system and let AI build the diagram."
+      title="Generate a Diagram"
+      description="Describe the people, steps and relationships your assignment needs."
       className="max-w-xl"
     >
+      <div className="mb-4 flex items-center gap-2 rounded-lg bg-indigo-50/80 px-3 py-2 border border-indigo-100">
+        <Sparkles className="h-4 w-4 text-indigo-600" />
+        <span className="text-xs font-semibold text-indigo-700">Be specific: include names, relationships and any important rules.</span>
+      </div>
       {generating ? (
         <div className="flex flex-col items-center py-8">
           <div className="relative mb-6 flex h-16 w-16 items-center justify-center">
@@ -53,8 +78,8 @@ export function GenerateModal({
             <Sparkles className="h-6 w-6 text-indigo-500" />
           </div>
           <ul className="w-full max-w-xs space-y-3">
-            {GENERATION_STAGES.map((s) => {
-              const done = (GENERATION_STAGES.indexOf(s) < GENERATION_STAGES.indexOf(stage));
+            {GENERATION_STAGES.map((s, index) => {
+              const done = s.progress < stage.progress;
               const current = s.label === stage.label;
               return (
                 <li key={s.label} className="flex items-center gap-3">
@@ -67,7 +92,7 @@ export function GenerateModal({
                           : 'border-slate-200 bg-slate-50 text-slate-300'
                     }`}
                   >
-                    {done ? '✓' : GENERATION_STAGES.indexOf(s) + 1}
+                    {done ? '✓' : index + 1}
                   </span>
                   <span
                     className={`text-sm ${done ? 'text-slate-500' : current ? 'font-medium text-slate-900' : 'text-slate-300'}`}
@@ -83,6 +108,7 @@ export function GenerateModal({
       ) : (
         <>
           <div className="space-y-4">
+            {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
             <Field label="Diagram type">
               <Select value={type} onChange={(e) => setType(e.target.value as DiagramType)}>
                 {(Object.keys(DIAGRAM_TYPE_LABELS) as DiagramType[]).map((t) => (
@@ -105,6 +131,7 @@ export function GenerateModal({
             </Field>
           </div>
           <div className="mt-5 flex items-center justify-end gap-2">
+            {error && onTemplates && <Button variant="outline" onClick={onTemplates}>Use a template instead</Button>}
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>

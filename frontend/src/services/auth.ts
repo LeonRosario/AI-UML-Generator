@@ -19,10 +19,52 @@ async function hashPassword(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+const TOKEN_KEY = 'auth:token';
+
+function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
+}
+
+function setStoredToken(token: string | null, remember = true): void {
+  if (!token) {
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+  } else if (remember) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    sessionStorage.setItem(TOKEN_KEY, token);
+  }
+}
+
+function formatErrorDetail(detail: unknown): string {
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((d) => (typeof d === 'object' && d ? (d as { msg?: string }).msg ?? JSON.stringify(d) : String(d))).join(', ');
+  }
+  if (detail && typeof detail === 'object') {
+    return (detail as { msg?: string }).msg ?? JSON.stringify(detail);
+  }
+  return 'Something went wrong. Please try again.';
+}
+
 async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, { ...options, credentials: 'include', headers: { 'Content-Type': 'application/json', ...options.headers } });
-  const body = (await response.json().catch(() => ({}))) as { detail?: string } & T;
-  if (!response.ok) throw new Error(body.detail ?? 'Something went wrong. Please try again.');
+  const token = getStoredToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    credentials: 'include',
+    headers,
+  });
+
+  const body = (await response.json().catch(() => ({}))) as { detail?: unknown } & T;
+  if (!response.ok) throw new Error(formatErrorDetail(body.detail));
   return body;
 }
 
@@ -32,12 +74,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!API_URL) return;
-    api<{ user: AuthUser }>('/auth/me').then(({ user: current }) => setUser(current)).catch(() => setUser(null)).finally(() => setLoading(false));
+    api<{ user: AuthUser }>('/auth/me')
+      .then(({ user: current }) => {
+        setUser(current);
+        saveJSON(SESSION_KEY, current);
+      })
+      .catch(() => {
+        if (!getStoredToken()) {
+          setUser(null);
+          removeKey(SESSION_KEY);
+          sessionStorage.removeItem(SESSION_KEY);
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const signIn = useCallback(async (email: string, password: string, remember: boolean) => {
     if (API_URL) {
-      const result = await api<{ user: AuthUser }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, remember }) });
+      const result = await api<{ user: AuthUser; access_token?: string }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, remember }) });
+      if (result.access_token) setStoredToken(result.access_token, remember);
+      if (remember) saveJSON(SESSION_KEY, result.user); else sessionStorage.setItem(SESSION_KEY, JSON.stringify(result.user));
       setUser(result.user);
       return;
     }
@@ -51,7 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (name: string, email: string, password: string) => {
     if (API_URL) {
-      const result = await api<{ user: AuthUser }>('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) });
+      const result = await api<{ user: AuthUser; access_token?: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) });
+      if (result.access_token) setStoredToken(result.access_token, true);
+      saveJSON(SESSION_KEY, result.user);
       setUser(result.user);
       return;
     }
@@ -66,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (API_URL) await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
+    setStoredToken(null);
     removeKey(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
     setUser(null);

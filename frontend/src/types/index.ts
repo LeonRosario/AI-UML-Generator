@@ -8,7 +8,32 @@ export type DiagramType =
   | 'er'
   | 'state'
   | 'component'
-  | 'deployment';
+  | 'deployment'
+  | 'flowchart'
+  | 'network'
+  | 'architecture'
+  | 'gantt';
+
+export type GanttTask = {
+  id: string;
+  name: string;
+  start: string; // ISO calendar date; duration is in calendar days, end is exclusive
+  duration: number;
+  assignee: string;
+  progress: number;
+  milestone: boolean;
+  dependencies: string[]; // finish-to-start predecessor task IDs
+};
+export type GanttChart = { tasks: GanttTask[] };
+export type DiagramLayer = { id: string; name: string; visible: boolean; locked: boolean };
+export type EditorPreferences = {
+  canvasBackground: string;
+  showGrid: boolean;
+  snapToGrid: boolean;
+  smartGuides: boolean;
+  routing: 'elbow' | 'straight' | 'curved';
+  theme: 'classic' | 'ocean' | 'forest' | 'midnight';
+};
 
 export type DiagramNodeData = {
   label: string;
@@ -36,6 +61,9 @@ export type Diagram = {
   type: DiagramType;
   nodes: DiagramNode[];
   edges: Edge[];
+  gantt?: GanttChart;
+  layers?: DiagramLayer[];
+  preferences?: EditorPreferences;
   createdAt: string;
   updatedAt: string;
   ownerId?: string;

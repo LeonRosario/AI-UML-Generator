@@ -40,6 +40,7 @@ export type ShapeItem = {
   type: string;
   label: string;
   icon: LucideIcon;
+  aliases?: string[];
 };
 
 export type ShapeCategory = {
@@ -87,6 +88,50 @@ export const SHAPE_LIBRARY: ShapeCategory[] = [
       { type: 'noteNode', label: 'Note', icon: StickyNote },
     ],
   },
+  { id: 'flowchart', label: 'Flowchart', items: [
+    { type: 'flowProcessNode', label: 'Process', icon: RectangleHorizontal, aliases: ['action'] }, { type: 'flowDecisionNode', label: 'Decision', icon: Diamond, aliases: ['choice'] },
+    { type: 'flowTerminatorNode', label: 'Terminator', icon: Circle, aliases: ['start', 'end'] }, { type: 'flowInputOutputNode', label: 'Input / Output', icon: ArrowRightLeft },
+    { type: 'flowDocumentNode', label: 'Document', icon: StickyNote }, { type: 'flowDatabaseNode', label: 'Database', icon: Database, aliases: ['db'] },
+    { type: 'flowConnectorNode', label: 'Connector', icon: Circle }, { type: 'flowOffPageNode', label: 'Off-page Connector', icon: Triangle },
+  ]},
+  { id: 'er', label: 'ER / Database', items: [
+    { type: 'erEntityNode', label: 'Entity', icon: RectangleHorizontal, aliases: ['table'] }, { type: 'erWeakEntityNode', label: 'Weak Entity', icon: RectangleHorizontal },
+    { type: 'erAttributeNode', label: 'Attribute', icon: Circle }, { type: 'erRelationshipNode', label: 'Relationship', icon: Diamond },
+    { type: 'erDatabaseNode', label: 'Database', icon: Database, aliases: ['db'] }, { type: 'erTableNode', label: 'Table', icon: Database },
+  ]},
+  { id: 'sequence', label: 'Sequence', items: [
+    { type: 'sequenceActorNode', label: 'Actor', icon: User }, { type: 'sequenceLifelineNode', label: 'Lifeline', icon: MoveRight },
+    { type: 'sequenceBoundaryNode', label: 'Boundary', icon: RectangleHorizontal }, { type: 'sequenceControlNode', label: 'Control', icon: Box },
+    { type: 'sequenceEntityNode', label: 'Entity', icon: Database }, { type: 'sequenceFragmentNode', label: 'Fragment', icon: Braces },
+  ]},
+  { id: 'activity', label: 'Activity', items: [
+    { type: 'activityInitialNode', label: 'Initial Node', icon: Circle }, { type: 'activityActionNode', label: 'Action', icon: RectangleHorizontal },
+    { type: 'activityDecisionNode', label: 'Decision / Merge', icon: Diamond }, { type: 'activityForkNode', label: 'Fork / Join', icon: GitMerge },
+    { type: 'activityFinalNode', label: 'Final Node', icon: Circle }, { type: 'swimlaneNode', label: 'Swimlane', icon: RectangleHorizontal },
+  ]},
+  { id: 'state', label: 'State', items: [
+    { type: 'stateInitialNode', label: 'Initial State', icon: Circle }, { type: 'stateNode', label: 'State', icon: RectangleHorizontal },
+    { type: 'stateChoiceNode', label: 'Choice', icon: Diamond }, { type: 'stateFinalNode', label: 'Final State', icon: Circle },
+  ]},
+  { id: 'deployment', label: 'Deployment', items: [
+    { type: 'deploymentDeviceNode', label: 'Device', icon: Box }, { type: 'deploymentNode', label: 'Node', icon: Square },
+    { type: 'deploymentEnvironmentNode', label: 'Execution Environment', icon: Package }, { type: 'artifactNode', label: 'Artifact', icon: StickyNote },
+  ]},
+  { id: 'network', label: 'Network', items: [
+    { type: 'networkRouterNode', label: 'Router', icon: ArrowRightLeft }, { type: 'networkSwitchNode', label: 'Switch', icon: ArrowRightLeft },
+    { type: 'networkFirewallNode', label: 'Firewall', icon: Box }, { type: 'networkServerNode', label: 'Server', icon: Database },
+    { type: 'networkClientNode', label: 'Client', icon: User }, { type: 'networkCloudNode', label: 'Cloud', icon: CircleDashed },
+  ]},
+  { id: 'architecture', label: 'Architecture', items: [
+    { type: 'archServerNode', label: 'Server', icon: Database }, { type: 'archClientNode', label: 'Client', icon: User },
+    { type: 'archApiNode', label: 'API / REST API', icon: Braces, aliases: ['rest'] }, { type: 'archCacheNode', label: 'Cache', icon: Database },
+    { type: 'archQueueNode', label: 'Queue', icon: ArrowRightLeft }, { type: 'archServiceNode', label: 'Microservice', icon: Component, aliases: ['service'] },
+    { type: 'archGatewayNode', label: 'Gateway', icon: ArrowRight }, { type: 'archCloudNode', label: 'Cloud', icon: CircleDashed },
+  ]},
+  { id: 'cloud', label: 'Cloud', items: [
+    { type: 'cloudComputeNode', label: 'Compute', icon: Box }, { type: 'cloudStorageNode', label: 'Storage', icon: Database },
+    { type: 'cloudNetworkNode', label: 'Network / VPC', icon: CircleDashed, aliases: ['vpc', 'subnet'] }, { type: 'cloudMonitoringNode', label: 'Monitoring', icon: Zap },
+  ]},
   {
     id: 'relationships',
     label: 'Relationships',
@@ -141,6 +186,17 @@ const NODE_DEFAULTS: Record<string, { width: number; height: number; fixed: bool
 };
 
 export function nodeDefaults(type: string): { width: number; height: number; fixed: boolean; defaultData: Record<string, unknown> } {
+  if (!NODE_DEFAULTS[type] && /^(flow|er|sequence|activity|state|deployment|network|arch|cloud)/.test(type)) {
+    let width = 160, height = 92;
+    if (['sequenceActorNode', 'networkClientNode', 'archClientNode'].includes(type)) { width = 100; height = 84; }
+    if (['activityInitialNode', 'stateInitialNode', 'flowConnectorNode'].includes(type)) { width = 32; height = 32; }
+    if (['activityFinalNode', 'stateFinalNode'].includes(type)) { width = 40; height = 40; }
+    if (type === 'activityForkNode') { width = 144; height = 12; }
+    if (type === 'sequenceLifelineNode') { width = 130; height = 144; }
+    if (['sequenceFragmentNode', 'swimlaneNode'].includes(type)) { width = 224; height = 128; }
+    if (['networkRouterNode', 'networkSwitchNode'].includes(type)) { width = 144; height = 80; }
+    return { width, height, fixed: true, defaultData: {} };
+  }
   return NODE_DEFAULTS[type] ?? NODE_DEFAULTS.rectangleNode;
 }
 
@@ -195,10 +251,18 @@ export function defaultLabel(type: string): string {
     entityNode: 'Table',
     genericNode: 'Step',
   };
-  return map[type] ?? 'Element';
+  return map[type] ?? SHAPE_LIBRARY.flatMap(category => category.items).find(item => item.type === type)?.label ?? type.replace(/Node$/, '').replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
 export function inferDiagramType(type: string): DiagramType {
+  if (type.startsWith('flow')) return 'flowchart';
+  if (type.startsWith('network')) return 'network';
+  if (type.startsWith('arch') || type.startsWith('cloud')) return 'architecture';
+  if (type.startsWith('er')) return 'er';
+  if (type.startsWith('sequence')) return 'sequence';
+  if (type.startsWith('activity') || type === 'swimlaneNode') return 'activity';
+  if (type.startsWith('deployment') || type === 'artifactNode') return 'deployment';
+  if (type.startsWith('state')) return 'state';
   if (type === 'actorNode' || type === 'useCaseNode' || type === 'systemBoundaryNode' || type === 'interfaceSymbolNode') return 'use-case';
   if (type === 'classNode' || type === 'interfaceNode' || type === 'abstractClassNode' || type === 'objectNode' || type === 'packageNode') return 'class';
   if (type === 'databaseNode' || type === 'entityNode') return 'er';
