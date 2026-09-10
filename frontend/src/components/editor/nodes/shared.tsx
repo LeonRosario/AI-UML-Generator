@@ -12,8 +12,8 @@ export function NodeHandles({ size = 'small' }: { size?: 'small' | 'large' }) {
     <>
       <Handle type="target" position={Position.Top} className={cls} />
       <Handle type="source" position={Position.Bottom} className={cls} />
-      <Handle type="target" position={Position.Left} className={cls} />
-      <Handle type="source" position={Position.Right} className={cls} />
+      <Handle id="left" type="target" position={Position.Left} className={cls} />
+      <Handle id="right" type="source" position={Position.Right} className={cls} />
     </>
   );
 }

@@ -126,3 +126,8 @@ body {
 input[type='range'] {
   accent-color: hsl(231 74% 66%);
 }
+
+.scaled-node > .uml-node { width: 100% !important; height: 100% !important; min-width: 0 !important; min-height: 0 !important; }
+
+.layer-locked .react-flow__handle { visibility: hidden; }
+.layer-locked .uml-node { pointer-events: none; }

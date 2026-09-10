@@ -55,13 +55,13 @@ export function AIChat({ diagram, collapsed, onDiagramChange }: { diagram: Diagr
         push('assistant', reply.problems.length ? reply.problems.join('\n') : 'No structural issues were reported by the AI.');
       } else if (prompt === '__improve__') {
         const reply = await aiModifyDiagram('Improve the diagram by resolving the structural issues you identify.', diagram);
-        onDiagramChange?.({ ...diagram, nodes: reply.nodes, edges: reply.edges, updatedAt: new Date().toISOString() });
+        onDiagramChange?.({ ...diagram, nodes: reply.nodes, edges: reply.edges, gantt: reply.gantt ?? diagram.gantt, updatedAt: new Date().toISOString() });
         push('assistant', reply.message);
         setUsedCount((c) => c + 1);
         toast('success', 'Diagram improved by AI');
       } else {
         const reply = await aiModifyDiagram(prompt, diagram);
-        onDiagramChange?.({ ...diagram, nodes: reply.nodes, edges: reply.edges, updatedAt: new Date().toISOString() });
+        onDiagramChange?.({ ...diagram, nodes: reply.nodes, edges: reply.edges, gantt: reply.gantt ?? diagram.gantt, updatedAt: new Date().toISOString() });
         push('assistant', reply.message);
         if (reply.applied?.length) {
           push('assistant', `Applied: ${reply.applied.join(' · ')}`);

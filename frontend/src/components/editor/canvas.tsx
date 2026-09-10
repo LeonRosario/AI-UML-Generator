@@ -5,6 +5,8 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
+  ViewportPortal,
+  type NodeChange,
   useReactFlow,
   type Connection,
   type NodeMouseHandler,
@@ -14,6 +16,7 @@ import type { DiagramNode } from '@/types';
 import { useEditorStore, useEditorUi } from '@/store/editor-store';
 import { RelationshipEdge, UmlMarkerDefs } from '@/lib/editor/edge-types';
 import { EDITOR_NODE_TYPES } from './nodes';
+import { alignmentDelta } from '@/lib/editor/alignment';
 import { cn } from '@/lib/cn';
 
 const GRID_SIZE = 24;
@@ -44,8 +47,15 @@ export function EditorCanvas({
   onViewportChange?: (viewport: Viewport) => void;
   outerRef?: React.RefObject<HTMLDivElement | null>;
 }) {
-  const nodes = useEditorStore((s) => s.nodes);
-  const edges = useEditorStore((s) => s.edges);
+  const storedNodes = useEditorStore((s) => s.nodes);
+  const layers = useEditorStore(s => s.layers);
+  const nodes = useMemo(() => storedNodes.map(n => {
+    const layer = layers.find(l => l.id === (n.data.layerId ?? 'default'));
+    return { ...n, hidden: n.hidden || layer?.visible === false, draggable: layer?.locked ? false : n.draggable, selectable: layer?.locked ? false : n.selectable, connectable: !layer?.locked, deletable: !layer?.locked, className: layer?.locked ? 'layer-locked' : undefined };
+  }), [storedNodes, layers]);
+  const guides = useEditorStore(s => s.guides);
+  const storedEdges = useEditorStore((s) => s.edges);
+  const edges = useMemo(() => storedEdges.map(e => ({ ...e, hidden: e.hidden || [e.source, e.target].some(id => nodes.find(n => n.id === id)?.hidden), selectable: [e.source, e.target].every(id => nodes.find(n => n.id === id)?.selectable !== false), deletable: [e.source, e.target].every(id => nodes.find(n => n.id === id)?.deletable !== false) })), [storedEdges, nodes]);
   const diagramId = useEditorStore((s) => s.diagramId);
   const snapToGrid = useEditorStore((s) => s.snapToGrid);
   const showGrid = useEditorStore((s) => s.showGrid);
@@ -65,7 +75,6 @@ export function EditorCanvas({
 
   const { screenToFlowPosition, fitView } = useReactFlow();
   const dropRef = useRef<HTMLDivElement>(null);
-  const clickInsertCount = useRef(0);
 
   const nodeTypes = useMemo(() => EDITOR_NODE_TYPES, []);
   const edgeTypes = useMemo(() => ({ 'uml-edge': RelationshipEdge }), []);
@@ -84,13 +93,21 @@ export function EditorCanvas({
     const el = dropRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    // A sequence of click-insertions should form a discoverable board, not a
-    // stack of indistinguishable nodes at precisely the same center point.
-    const index = clickInsertCount.current++;
-    const column = (index % 4) - 1.5;
-    const row = Math.floor(index / 4) % 3 - 1;
-    const pos = screenToFlowPosition({ x: rect.left + rect.width / 2 + column * 190, y: rect.top + rect.height / 2 + row * 130 });
+    const center = screenToFlowPosition({ x: rect.left + rect.width / 2 - 110, y: rect.top + rect.height / 2 - 80 });
+    const existing = useEditorStore.getState().nodes.filter(n => !n.hidden);
+    const gapX = Math.max(260, ...existing.map(n => (n.measured?.width ?? n.width ?? 210) + 48));
+    const gapY = Math.max(200, ...existing.map(n => (n.measured?.height ?? n.height ?? 150) + 48));
+    let pos = center;
+    const occupied = (p: { x: number; y: number }) => existing.some(n => p.x < n.position.x + (n.measured?.width ?? n.width ?? 210) + 24 && p.x + 234 > n.position.x && p.y < n.position.y + (n.measured?.height ?? n.height ?? 150) + 24 && p.y + 174 > n.position.y);
+    search: for (let ring = 0; ring <= existing.length + 1; ring++) {
+      for (let y = -ring; y <= ring; y++) for (let x = -ring; x <= ring; x++) {
+        if (Math.max(Math.abs(x), Math.abs(y)) !== ring) continue;
+        const candidate = { x: center.x + x * gapX, y: center.y + y * gapY };
+        if (!occupied(candidate)) { pos = candidate; break search; }
+      }
+    }
     addNode(addAtCenter.type, pos);
+    useEditorUi.setState({ addAtCenter: null });
     window.dispatchEvent(new CustomEvent('umlforge:shape-inserted', { detail: addAtCenter.type }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addAtCenter]);
@@ -128,6 +145,18 @@ export function EditorCanvas({
   }, []);
 
   const handleNodeDragStart = useCallback(() => beginDrag(), [beginDrag]);
+  const handleNodeChanges = useCallback((changes: NodeChange<DiagramNode>[]) => {
+    const state = useEditorStore.getState();
+    const positions = changes.filter(c => c.type === 'position' && c.position && c.dragging);
+    if (!state.smartGuides || !positions.length) { state.setGuides({}); applyNodeChanges(changes); return; }
+    const moving = nodes.filter(n => positions.some(c => 'id' in c && c.id === n.id)).map(n => {
+      const change = positions.find(c => 'id' in c && c.id === n.id);
+      return change?.type === 'position' && change.position ? { ...n, position: change.position } : n;
+    });
+    const delta = alignmentDelta(moving, nodes.filter(n => !n.hidden && !moving.some(m => m.id === n.id)));
+    state.setGuides({ x: delta.x, y: delta.y });
+    applyNodeChanges(changes.map(c => c.type === 'position' && c.position && c.dragging ? { ...c, position: { x: c.position.x + delta.dx, y: c.position.y + delta.dy } } : c));
+  }, [nodes, applyNodeChanges]);
 
   const handleNodeDoubleClick: NodeMouseHandler = useCallback(() => {
     /* inline editing is handled inside each node component */
@@ -154,10 +183,13 @@ export function EditorCanvas({
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        onNodesChange={applyNodeChanges}
+        onNodesChange={handleNodeChanges}
         onEdgesChange={applyEdgeChanges}
         onConnect={handleConnect}
         onNodeDragStart={handleNodeDragStart}
+        onSelectionDragStart={handleNodeDragStart}
+        onNodeDragStop={() => useEditorStore.getState().setGuides({})}
+        onSelectionDragStop={() => useEditorStore.getState().setGuides({})}
         onNodesDelete={deleteNodes}
         onEdgesDelete={deleteEdges}
         onNodeDoubleClick={handleNodeDoubleClick}
@@ -169,7 +201,7 @@ export function EditorCanvas({
         fitViewOptions={{ padding: 0.2, maxZoom: 1.1 }}
         minZoom={0.1}
         maxZoom={2.5}
-        deleteKeyCode={['Backspace', 'Delete']}
+        deleteKeyCode={null}
         multiSelectionKeyCode={['Shift', 'Meta']}
         selectionKeyCode="Shift"
         selectionOnDrag
@@ -189,6 +221,7 @@ export function EditorCanvas({
             color="#e2e8f0"
           />
         )}
+        <ViewportPortal><svg className="pointer-events-none absolute overflow-visible" width="1" height="1">{guides.x !== undefined && <line x1={guides.x} x2={guides.x} y1="-100000" y2="100000" stroke="#f43f5e" strokeWidth="1" strokeDasharray="5 4" />}{guides.y !== undefined && <line y1={guides.y} y2={guides.y} x1="-100000" x2="100000" stroke="#f43f5e" strokeWidth="1" strokeDasharray="5 4" />}</svg></ViewportPortal>
         <UmlMarkerDefs />
         <MiniMap
           nodeColor={nodeColor}

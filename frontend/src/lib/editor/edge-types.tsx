@@ -1,8 +1,10 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useId, useEffect, useRef, useState } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
   getSmoothStepPath,
+  getBezierPath,
+  getStraightPath,
   type EdgeProps,
 } from '@xyflow/react';
 import { cn } from '@/lib/cn';
@@ -80,6 +82,7 @@ function markerUrl(name: 'closed-arrow' | 'open-arrow' | 'diamond' | 'diamond-fi
 function RelationshipEdgeComponent(props: EdgeProps) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected, label, style } = props;
   const updateEdge = useEditorStore((s) => s.updateEdge);
+  const markerId = useId().replace(/:/g, '');
 
   const relationship = (data as RelationshipEdgeData | undefined)?.relationship ?? 'association';
   const config = RELATIONSHIP_STYLE[relationship] ?? RELATIONSHIP_STYLE.association;
@@ -93,14 +96,16 @@ function RelationshipEdgeComponent(props: EdgeProps) {
     if (editing) inputRef.current?.select();
   }, [editing]);
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const routing = data?.routing ?? 'elbow';
+  const pathBuilder = routing === 'straight' ? getStraightPath : routing === 'curved' ? getBezierPath : getSmoothStepPath;
+  const [edgePath, labelX, labelY] = pathBuilder({
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 8,
+    borderRadius: 0,
   });
 
   const strokeColor = selected ? SELECTED_EDGE_COLOR : color;
@@ -113,6 +118,10 @@ function RelationshipEdgeComponent(props: EdgeProps) {
 
   return (
     <>
+      <defs>
+        {config.markerEnd && <marker id={`${markerId}-end`} viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M2 1 L11 6 L2 11 Z" fill={config.markerEnd === 'open-arrow' ? '#ffffff' : strokeColor} stroke={strokeColor} strokeWidth="1.5" /></marker>}
+        {config.markerStart && <marker id={`${markerId}-start`} viewBox="0 0 14 14" refX="12" refY="7" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M7 1 L13 7 L7 13 L1 7 Z" fill={config.markerStart === 'diamond-filled' ? strokeColor : '#ffffff'} stroke={strokeColor} strokeWidth="1.5" /></marker>}
+      </defs>
       <BaseEdge
         id={id}
         path={edgePath}
@@ -122,8 +131,8 @@ function RelationshipEdgeComponent(props: EdgeProps) {
           strokeWidth: selected ? 2 : 1.5,
           ...(config.dash ? { strokeDasharray: config.dash } : {}),
         }}
-        markerStart={config.markerStart ? markerUrl(config.markerStart, !!selected) : undefined}
-        markerEnd={config.markerEnd ? markerUrl(config.markerEnd, !!selected) : undefined}
+        markerStart={config.markerStart ? `url(#${markerId}-start)` : undefined}
+        markerEnd={config.markerEnd ? `url(#${markerId}-end)` : undefined}
       />
       {showLabel && (
         <EdgeLabelRenderer>

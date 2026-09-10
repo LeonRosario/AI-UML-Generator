@@ -1,3 +1,4 @@
+import { SemanticSymbol, SEMANTIC_TYPES } from './semantic-symbol';
 import { memo } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
@@ -22,13 +23,14 @@ function GeometryNodeComponent({ id, data, selected }: NodeProps<Node<DiagramNod
   const type = String(data.nodeType ?? ''); const label = String(data.label ?? 'Element');
   const style = nodeStyle(data); const color = String(data.borderColor ?? '#334155');
   const labelEl = <foreignObject x="14" y="35" width="132" height="48"><div className="flex h-full items-center justify-center px-2 text-center text-[12px] font-medium break-words" style={{ color: String(data.textColor ?? '#0f172a') }}><InlineLabel value={label} onRename={(value) => update(id, { label: value })} /></div></foreignObject>;
+  if (SEMANTIC_TYPES.has(type)) return <div className={`uml-node relative h-[92px] w-[160px] ${selected ? 'ring-2 ring-indigo-400' : ''}`}><NodeHandles /><SemanticSymbol type={type} color={color} fill={String(data.fill ?? '#fff')} strokeWidth={Number(data.borderWidth ?? 2)}>{labelEl}</SemanticSymbol></div>;
   if (actor.has(type)) return <div className="uml-node flex w-[100px] flex-col items-center gap-1 rounded-lg p-2" style={style}><NodeHandles /><ActorFigure className="h-11 w-11" color={String(data.textColor ?? '#334155')} /><InlineLabel value={label} onRename={(value) => update(id,{label:value})} /></div>;
   if (type === 'sequenceLifelineNode') return <div className="uml-node relative w-[130px]" style={style}><NodeHandles /><div className="border-b px-2 py-1.5 text-center text-xs">{label}</div><div className="mx-auto h-28 border-l border-dashed" style={{borderColor:color}} /></div>;
   if (type === 'activityForkNode') return <div className="uml-node h-3 w-36" style={{background:color}}><NodeHandles /></div>;
   if (final.has(type)) return <div className="uml-node flex h-10 w-10 items-center justify-center rounded-full border-2" style={{borderColor:color}}><NodeHandles /><span className="h-5 w-5 rounded-full" style={{background:color}} /></div>;
   if (circle.has(type)) return <div className="uml-node h-8 w-8 rounded-full" style={{background:color}}><NodeHandles /></div>;
   if (type === 'sequenceFragmentNode' || type === 'swimlaneNode') return <div className="uml-node min-h-32 min-w-56 border-2 border-dashed p-2" style={style}><NodeHandles /><InlineLabel value={label} onRename={(value) => update(id,{label:value})} /></div>;
-  if (type === 'networkRouterNode' || type === 'networkSwitchNode' || type === 'networkFirewallNode') return <div className="uml-node flex h-20 w-36 flex-col items-center justify-center gap-1 rounded-lg border-2" style={style}><NodeHandles /><div className="text-xl">{type === 'networkFirewallNode' ? '▦' : '⇄'}</div><InlineLabel value={label} onRename={(value)=>update(id,{label:value})} /></div>;
+  if (type === 'networkRouterNode' || type === 'networkSwitchNode') return <div className="uml-node flex h-20 w-36 flex-col items-center justify-center gap-1 rounded-lg border-2" style={style}><NodeHandles /><div className="text-xl">⇄</div><InlineLabel value={label} onRename={(value)=>update(id,{label:value})} /></div>;
   return <div className={`uml-node relative h-[92px] w-[160px] ${selected ? 'ring-2 ring-indigo-400' : ''}`}><NodeHandles />
     <svg viewBox="0 0 160 92" className="h-full w-full overflow-visible">
       {diamond.has(type) && <polygon points="80,2 158,46 80,90 2,46" fill={String(data.fill ?? '#fff')} stroke={color} strokeWidth="2" />}

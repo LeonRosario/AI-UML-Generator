@@ -1,3 +1,4 @@
+import { EXTENDED_TEMPLATES } from './extended-templates';
 import type { Edge } from '@xyflow/react';
 import type { Diagram, DiagramNode, DiagramType } from '@/types';
 
@@ -278,6 +279,10 @@ export const DIAGRAMS_BY_TYPE: Record<DiagramType, Diagram> = {
   state: STATE,
   component: COMPONENT,
   deployment: DEPLOYMENT,
+  flowchart: EXTENDED_TEMPLATES.find(t => t.diagramType === 'flowchart')!.diagram,
+  network: EXTENDED_TEMPLATES.find(t => t.diagramType === 'network')!.diagram,
+  architecture: EXTENDED_TEMPLATES.find(t => t.diagramType === 'architecture')!.diagram,
+  gantt: EXTENDED_TEMPLATES.find(t => t.diagramType === 'gantt')!.diagram,
 };
 
 export const DIAGRAM_TYPE_LABELS: Record<DiagramType, string> = {
@@ -289,4 +294,8 @@ export const DIAGRAM_TYPE_LABELS: Record<DiagramType, string> = {
   state: 'State Diagram',
   component: 'Component Diagram',
   deployment: 'Deployment Diagram',
+  flowchart: 'Flowchart',
+  network: 'Network Diagram',
+  architecture: 'Cloud / System Architecture',
+  gantt: 'Gantt Chart',
 };

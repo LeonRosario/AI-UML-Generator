@@ -1,124 +1,33 @@
-import { Copy, Download, FileJson, FileText, FileType2, Image, Share2 } from 'lucide-react';
-import { toPng, toSvg } from 'html-to-image';
-import { jsPDF } from 'jspdf';
-import type { RefObject } from 'react';
+import { Copy, Download, FileJson, FileText, FileType2, Image } from 'lucide-react';
+import { useState, type RefObject } from 'react';
+import { prepareExport, type ExportFormat, type PreparedExport } from '@/lib/editor/export-utils';
 import type { Diagram } from '@/types';
 import { Dropdown, MenuDivider, MenuItem } from '@/components/ui/Dropdown';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 
-const download = (dataUrl: string, filename: string) => {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  a.click();
-};
-
-const filenameFor = (diagram: Diagram) => `${diagram.name.replace(/\s+/g, '-').toLowerCase()}`;
-
-export function ExportMenu({
-  diagram,
-  elementRef,
-  onCopyUml,
-}: {
-  diagram: Diagram;
-  elementRef?: RefObject<HTMLDivElement | null>;
-  onCopyUml?: () => void;
-}) {
+export function ExportMenu({ diagram, elementRef, onCopyUml }: { diagram: Diagram; elementRef?: RefObject<HTMLDivElement | null>; onCopyUml?: () => void }) {
   const toast = useToast();
-  const root = () => {
-    const el = elementRef?.current as HTMLElement | null;
-    return el ?? document.querySelector<HTMLElement>('.react-flow');
+  const [file, setFile] = useState<PreparedExport>();
+  const [busy, setBusy] = useState(false);
+  const prepare = async (format: ExportFormat) => {
+    setBusy(true);
+    try { setFile(await prepareExport(diagram, format, elementRef)); }
+    catch { toast('error', `${format.toUpperCase()} export failed. Please try again.`); }
+    finally { setBusy(false); }
   };
-
-  const guarded = async (op: () => Promise<void>, failMsg: string): Promise<boolean> => {
-    try {
-      await op();
-      return true;
-    } catch {
-      toast('error', failMsg);
-      return false;
-    }
-  };
-
-  const exportPng = async () => {
-    await guarded(
-      async () => {
-        const el = root();
-        if (!el) throw new Error('no canvas');
-        download(await toPng(el, { pixelRatio: 2, backgroundColor: '#f8fafc' }), `${filenameFor(diagram)}.png`);
-        toast('success', 'PNG exported');
-      },
-      'PNG export failed',
-    );
-  };
-
-  const exportSvg = async () => {
-    await guarded(
-      async () => {
-        const el = root();
-        if (!el) throw new Error('no canvas');
-        download(await toSvg(el, { backgroundColor: '#f8fafc' }), `${filenameFor(diagram)}.svg`);
-        toast('success', 'SVG exported');
-      },
-      'SVG export failed',
-    );
-  };
-
-  const exportPdf = async () => {
-    await guarded(
-      async () => {
-        const el = root();
-        if (!el) throw new Error('no canvas');
-        const png = await toPng(el, { pixelRatio: 2, backgroundColor: '#f8fafc' });
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1190, 770] });
-        pdf.addImage(png, 'PNG', 8, 8, 1174, 754);
-        pdf.save(`${filenameFor(diagram)}.pdf`);
-        toast('success', 'PDF exported');
-      },
-      'PDF export failed',
-    );
-  };
-
-  const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ name: diagram.name, type: diagram.type, nodes: diagram.nodes, edges: diagram.edges }, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    download(url, `${filenameFor(diagram)}.json`);
-    URL.revokeObjectURL(url);
-    toast('success', 'JSON exported');
-  };
-
-  return (
-    <Dropdown
-      trigger={(open) => (
-        <Button variant="outline" size="sm" className={open ? 'bg-slate-50' : undefined}>
-          <Download className="h-4 w-4" /> Export
-        </Button>
-      )}
-      align="right"
-    >
-      {(close) => (
-        <>
-          <MenuItem icon={<Image className="h-4 w-4" />} label="Export PNG" onClick={() => { close(); void exportPng(); }} />
-          <MenuItem icon={<FileType2 className="h-4 w-4" />} label="Export SVG" onClick={() => { close(); void exportSvg(); }} />
-          <MenuItem icon={<FileText className="h-4 w-4" />} label="Export PDF" onClick={() => { close(); void exportPdf(); }} />
-          <MenuItem icon={<FileJson className="h-4 w-4" />} label="Export JSON" onClick={() => { close(); exportJson(); }} />
-          <MenuDivider />
-          <MenuItem
-            icon={<Copy className="h-4 w-4" />}
-            label="Copy UML structure"
-            onClick={() => {
-              close();
-              onCopyUml?.();
-              toast('success', 'PlantUML structure copied to clipboard');
-            }}
-          />
-          <MenuDivider />
-          <MenuItem icon={<Share2 className="h-4 w-4" />} label="Share diagram" onClick={close} />
-        </>
-      )}
+  return <>
+    <Dropdown align="right" trigger={open => <Button aria-label={busy ? 'Preparing export' : 'Export'} variant="outline" size="sm" disabled={busy} className={open ? 'bg-slate-50' : undefined}><Download className="h-4 w-4" /><span className="hidden sm:inline">{busy ? 'Preparing…' : 'Export'}</span></Button>}>
+      {close => <>
+        {([{ format: 'png', icon: Image }, { format: 'svg', icon: FileType2 }, { format: 'pdf', icon: FileText }, { format: 'json', icon: FileJson }] as const).map(({ format, icon: Icon }) => <MenuItem key={format} icon={<Icon className="h-4 w-4" />} label={`Export ${format.toUpperCase()}`} onClick={() => { close(); void prepare(format); }} />)}
+        {onCopyUml && <><MenuDivider /><MenuItem icon={<Copy className="h-4 w-4" />} label="Copy UML structure" onClick={() => { close(); onCopyUml(); }} /></>}
+      </>}
     </Dropdown>
-  );
+    <Modal open={!!file} onClose={() => setFile(undefined)} title="Your export is ready" description={file?.filename} className="max-w-3xl">
+      {file?.preview && <img src={file.preview} alt="Complete diagram export preview" className="mx-auto max-h-[50vh] max-w-full object-contain" />}
+      {file?.format === 'json' && <p className="text-sm text-slate-600">Includes the editable diagram, relationships, layers, styles and any project schedule.</p>}
+      {file && <div className="mt-4 flex justify-end"><a className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white" href={file.url} download={file.filename}><Download className="h-4 w-4" />Download {file.format.toUpperCase()}</a></div>}
+    </Modal>
+  </>;
 }

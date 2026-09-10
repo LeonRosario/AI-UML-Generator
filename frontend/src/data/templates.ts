@@ -1,3 +1,4 @@
+import { EXTENDED_TEMPLATES } from './extended-templates';
 import type { Diagram, Template } from '@/types';
 import { actorNode, classNode, edge, entityNode, genericNode, useCaseNode } from './diagrams';
 
@@ -97,6 +98,7 @@ const auth: Diagram = build(
 );
 
 export const TEMPLATE_CATEGORIES = [
+  'Flowchart', 'Network', 'Architecture', 'Gantt',
   'All',
   'E-Commerce',
   'Banking',
@@ -111,6 +113,7 @@ export const TEMPLATE_CATEGORIES = [
 ] as const;
 
 export const TEMPLATES: Template[] = [
+  ...EXTENDED_TEMPLATES,
   {
     id: 'tpl-student',
     name: 'Student Management System',

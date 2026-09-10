@@ -186,6 +186,17 @@ const NODE_DEFAULTS: Record<string, { width: number; height: number; fixed: bool
 };
 
 export function nodeDefaults(type: string): { width: number; height: number; fixed: boolean; defaultData: Record<string, unknown> } {
+  if (!NODE_DEFAULTS[type] && /^(flow|er|sequence|activity|state|deployment|network|arch|cloud)/.test(type)) {
+    let width = 160, height = 92;
+    if (['sequenceActorNode', 'networkClientNode', 'archClientNode'].includes(type)) { width = 100; height = 84; }
+    if (['activityInitialNode', 'stateInitialNode', 'flowConnectorNode'].includes(type)) { width = 32; height = 32; }
+    if (['activityFinalNode', 'stateFinalNode'].includes(type)) { width = 40; height = 40; }
+    if (type === 'activityForkNode') { width = 144; height = 12; }
+    if (type === 'sequenceLifelineNode') { width = 130; height = 144; }
+    if (['sequenceFragmentNode', 'swimlaneNode'].includes(type)) { width = 224; height = 128; }
+    if (['networkRouterNode', 'networkSwitchNode'].includes(type)) { width = 144; height = 80; }
+    return { width, height, fixed: true, defaultData: {} };
+  }
   return NODE_DEFAULTS[type] ?? NODE_DEFAULTS.rectangleNode;
 }
 
@@ -240,10 +251,18 @@ export function defaultLabel(type: string): string {
     entityNode: 'Table',
     genericNode: 'Step',
   };
-  return map[type] ?? type.replace(/Node$/, '').replace(/([a-z])([A-Z])/g, '$1 $2');
+  return map[type] ?? SHAPE_LIBRARY.flatMap(category => category.items).find(item => item.type === type)?.label ?? type.replace(/Node$/, '').replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
 export function inferDiagramType(type: string): DiagramType {
+  if (type.startsWith('flow')) return 'flowchart';
+  if (type.startsWith('network')) return 'network';
+  if (type.startsWith('arch') || type.startsWith('cloud')) return 'architecture';
+  if (type.startsWith('er')) return 'er';
+  if (type.startsWith('sequence')) return 'sequence';
+  if (type.startsWith('activity') || type === 'swimlaneNode') return 'activity';
+  if (type.startsWith('deployment') || type === 'artifactNode') return 'deployment';
+  if (type.startsWith('state')) return 'state';
   if (type === 'actorNode' || type === 'useCaseNode' || type === 'systemBoundaryNode' || type === 'interfaceSymbolNode') return 'use-case';
   if (type === 'classNode' || type === 'interfaceNode' || type === 'abstractClassNode' || type === 'objectNode' || type === 'packageNode') return 'class';
   if (type === 'databaseNode' || type === 'entityNode') return 'er';

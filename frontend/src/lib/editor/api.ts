@@ -1,4 +1,4 @@
-import type { Diagram, DiagramNode, DiagramType } from '@/types';
+import type { Diagram, DiagramNode, DiagramType, GanttChart } from '@/types';
 import type { Edge } from '@xyflow/react';
 import { loadJSON, removeKey, saveJSON } from '@/services/storage';
 import { DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
@@ -71,11 +71,24 @@ function metaOf(diagram: Diagram): DiagramMeta {
   };
 }
 
-export async function fetchDiagrams(): Promise<DiagramMeta[]> {
+export async function fetchDiagrams(ownerId?: string): Promise<DiagramMeta[]> {
+  const local = index().filter(d => !ownerId || d.ownerId === ownerId);
   if (API_URL) {
-    return api<DiagramMeta[]>('/diagrams');
+    try {
+      const remote = await api<DiagramMeta[]>('/diagrams');
+      const merged = new Map(remote.map(d => [d.id, d]));
+      // Keep failed saves discoverable, including diagrams created offline.
+      local.filter(d => d.saved === false).forEach(d => {
+        const synced = merged.get(d.id);
+        if (!synced || d.updatedAt > synced.updatedAt) merged.set(d.id, d);
+      });
+      return [...merged.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    } catch (error) {
+      if (!local.length) throw error;
+      return local.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
   }
-  return index().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return local.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function fetchDiagram(id: string): Promise<Diagram | null> {
@@ -99,11 +112,13 @@ export async function persistDiagram(diagram: Diagram): Promise<boolean> {
   const normalized = normalizeDiagram(diagram);
   saveJSON(`${DIAGRAM_PREFIX}${diagram.id}`, normalized);
   const list = index().filter((m) => m.id !== diagram.id);
-  persistIndex([metaOf(normalized), ...list]);
+  persistIndex([{ ...metaOf(normalized), saved: !API_URL }, ...list]);
 
   if (API_URL) {
     try {
       await api(`/diagrams/${diagram.id}`, { method: 'PUT', body: JSON.stringify(normalized) });
+      // A slower earlier save must not mark a newer pending edit as synced.
+      persistIndex(index().map(m => m.id === normalized.id && m.updatedAt === normalized.updatedAt ? { ...m, saved: true } : m));
     } catch {
       // Local persistence above is deliberate offline resilience. A later save
       // will retry the API without making the user's diagram disappear.
@@ -145,9 +160,11 @@ export type AiDiagramPayload = {
   type: DiagramType;
   nodes: AiNodePayload[];
   edges: AiEdgePayload[];
+  gantt?: GanttChart;
 };
 
 export type AiModifyResult = {
+  gantt?: GanttChart;
   nodes: DiagramNode[];
   edges: Edge[];
   applied: string[];
@@ -463,7 +480,7 @@ function buildDeploymentDiagram(_requirements: string, type: DiagramType): AiDia
   return { name: derivedName(_requirements, type), type, nodes, edges };
 }
 
-const BUILDERS: Record<DiagramType, (req: string, type: DiagramType) => AiDiagramPayload> = {
+const BUILDERS: Partial<Record<DiagramType, (req: string, type: DiagramType) => AiDiagramPayload>> = {
   class: buildClassDiagram,
   'use-case': buildUseCaseDiagram,
   er: buildEntityDiagram,
@@ -483,11 +500,12 @@ export async function aiGenerateDiagram(
   type: DiagramType,
   onStage?: (label: string, progress: number) => void,
 ): Promise<{ diagram: Diagram; applied: string[] }> {
+  if (!API_URL && ['flowchart', 'network', 'architecture', 'gantt'].includes(type)) throw new Error('Configure the backend AI provider to generate this diagram. Templates and manual editing are available offline.');
   if (API_URL) {
     const payload = await api<AiDiagramPayload>('/ai/generate-diagram', { method: 'POST', body: JSON.stringify({ requirements, type }) });
     const { nodes, edges } = aiNodesToDiagramNodes(payload.nodes, payload.edges);
     const laid = applyLayout(type, nodes);
-    const diagram = normalizeDiagram({ id: uid('diag'), name: payload.name, type: payload.type, nodes: laid, edges, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    const diagram = normalizeDiagram({ id: uid('diag'), name: payload.name, type: payload.type, gantt: payload.gantt, nodes: laid, edges, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     return { diagram, applied: [`Generated ${DIAGRAM_TYPE_LABELS[type]} with ${nodes.length} elements`] };
   }
 
@@ -495,7 +513,7 @@ export async function aiGenerateDiagram(
   stages.forEach((label, i) => onStage?.(label, Math.round(((i + 1) / stages.length) * 100)));
   await delay(900);
   const builder = BUILDERS[type] ?? BUILDERS.class;
-  const payload = builder(requirements, type);
+  const payload = builder!(requirements, type);
   const { nodes, edges } = aiNodesToDiagramNodes(payload.nodes, payload.edges);
   const laid = applyLayout(type, nodes);
   const diagram = normalizeDiagram({ id: uid('diag'), name: payload.name, type, nodes: laid, edges, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
@@ -561,9 +579,10 @@ function insertPosition(nodes: DiagramNode[]): { x: number; y: number } {
 }
 
 export async function aiModifyDiagram(instructions: string, diagram: Diagram): Promise<AiModifyResult> {
+  if (!API_URL && diagram.type === 'gantt') throw new Error('Configure the backend AI provider to modify a schedule with AI.');
   if (API_URL) {
     const payload = await api<AiModifyResult>('/ai/modify-diagram', { method: 'POST', body: JSON.stringify({ instructions, diagram }) });
-    const normalized = normalizeDiagram({ ...diagram, nodes: payload.nodes, edges: payload.edges });
+    const normalized = normalizeDiagram({ ...diagram, gantt: payload.gantt ?? diagram.gantt, nodes: payload.nodes, edges: payload.edges });
     return { ...payload, nodes: normalized.nodes, edges: normalized.edges };
   }
 
@@ -709,6 +728,7 @@ function capitalize(value: string) {
 /* ------------------------------------------------------------------ */
 
 export async function aiExplainDiagram(diagram: Diagram): Promise<ExplainResult> {
+  if (!API_URL && diagram.type === 'gantt') throw new Error('Configure the backend AI provider to analyze a schedule.');
   if (API_URL) {
     return api<ExplainResult>('/ai/explain-diagram', { method: 'POST', body: JSON.stringify({ diagram }) });
   }

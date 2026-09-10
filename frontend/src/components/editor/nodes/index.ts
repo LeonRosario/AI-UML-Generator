@@ -1,4 +1,5 @@
-import type { NodeTypes } from '@xyflow/react';
+import { createElement, memo } from 'react';
+import type { NodeProps, NodeTypes } from '@xyflow/react';
 import { ActorNode } from './actor-node';
 import { ClassNode } from './class-node';
 import { ComponentNode } from './component-node';
@@ -9,7 +10,7 @@ import { PackageNode } from './package-node';
 import { UseCaseNode } from './use-case-node';
 import { GeometryNode } from './geometry-node';
 
-export const EDITOR_NODE_TYPES: NodeTypes = {
+const BASE_NODE_TYPES: NodeTypes = {
   classNode: ClassNode,
   interfaceNode: ClassNode,
   abstractClassNode: ClassNode,
@@ -41,3 +42,11 @@ export const EDITOR_NODE_TYPES: NodeTypes = {
     'cloudComputeNode','cloudStorageNode','cloudNetworkNode','cloudMonitoringNode',
   ].map((type) => [type, GeometryNode])),
 };
+
+// Scaling the inner layout scales labels and notation together while React Flow
+// retains the actual measured bounding box for connectors and hit testing.
+export const EDITOR_NODE_TYPES: NodeTypes = Object.fromEntries(Object.entries(BASE_NODE_TYPES).map(([type, Component]) => [type, memo(function ScaledNode(props: NodeProps) {
+  const scale = Number(props.data.scale ?? 1);
+  if (scale === 1) return createElement(Component, props);
+  return createElement('div', { className: 'scaled-node', style: { zoom: scale, width: props.width ? props.width / scale : undefined, height: props.height ? props.height / scale : undefined } }, createElement(Component, props));
+})]));

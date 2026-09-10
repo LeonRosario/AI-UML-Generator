@@ -1,3 +1,4 @@
+import { SemanticSymbol, SEMANTIC_TYPES } from './nodes/semantic-symbol';
 import { ActorFigure } from './nodes/actor-node';
 
 type ShapePreviewProps = { type: string; className?: string };
@@ -12,6 +13,7 @@ const actors = new Set(['actorNode', 'sequenceActorNode', 'networkClientNode', '
 /** A compact rendering of the same semantic geometry presented on the canvas. */
 export function ShapePreview({ type, className = '' }: ShapePreviewProps) {
   const stroke = '#475569';
+  if (SEMANTIC_TYPES.has(type)) return <div className={className}><SemanticSymbol type={type} color={stroke} /></div>;
   if (actors.has(type)) return <ActorFigure aria-hidden="true" className={`h-11 w-11 ${className}`} color={stroke} />;
   if (type === 'sequenceLifelineNode') return <svg aria-hidden="true" viewBox="0 0 96 52" className={className}><rect x="25" y="3" width="46" height="14" rx="2" fill="white" stroke={stroke} strokeWidth="2" /><path d="M48 17v32" stroke={stroke} strokeWidth="2" strokeDasharray="4 3" /></svg>;
   if (type === 'activityInitialNode' || type === 'stateInitialNode' || type === 'flowConnectorNode') return <svg aria-hidden="true" viewBox="0 0 96 52" className={className}><circle cx="48" cy="26" r="13" fill={stroke} /></svg>;

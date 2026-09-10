@@ -19,8 +19,12 @@ export function GenerateModal({
   open,
   onClose,
   onGenerated,
+  initialType,
+  onTemplates,
 }: {
   open: boolean;
+  initialType?: DiagramType;
+  onTemplates?: () => void;
   onClose: () => void;
   onGenerated: (diagram: Diagram) => void;
 }) {
@@ -31,11 +35,12 @@ export function GenerateModal({
 
   useEffect(() => {
     if (open) {
+      if (initialType) setType(initialType);
       setRequirements('');
       setStage(null);
       setError('');
     }
-  }, [open]);
+  }, [open, initialType]);
 
   const run = async () => {
     setStage({ label: 'Contacting AI provider…', progress: 15 });
@@ -44,7 +49,8 @@ export function GenerateModal({
       const result = await aiGenerateDiagram(requirements, type, (label, progress) => setStage({ label, progress }));
       onGenerated(result.diagram);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Unable to generate the diagram.');
+      const message = reason instanceof Error ? reason.message : 'Unable to generate the diagram.';
+      setError(/not configured|API_KEY/i.test(message) ? 'AI generation is unavailable in this workspace. You can still build your assignment using templates or shapes. Ask the workspace owner to enable AI generation.' : message);
       setStage(null);
     }
   };
@@ -57,13 +63,13 @@ export function GenerateModal({
       onClose={() => {
         if (!generating) onClose();
       }}
-      title="Generate a UML Diagram"
-      description="Describe your system and let the configured AI provider build the diagram."
+      title="Generate a Diagram"
+      description="Describe the people, steps and relationships your assignment needs."
       className="max-w-xl"
     >
       <div className="mb-4 flex items-center gap-2 rounded-lg bg-indigo-50/80 px-3 py-2 border border-indigo-100">
         <Sparkles className="h-4 w-4 text-indigo-600" />
-        <span className="text-xs font-semibold text-indigo-700">AI generation uses your configured backend provider.</span>
+        <span className="text-xs font-semibold text-indigo-700">Be specific: include names, relationships and any important rules.</span>
       </div>
       {generating ? (
         <div className="flex flex-col items-center py-8">
@@ -72,9 +78,8 @@ export function GenerateModal({
             <Sparkles className="h-6 w-6 text-indigo-500" />
           </div>
           <ul className="w-full max-w-xs space-y-3">
-            {['Contacting AI provider…', 'Validating response…', 'Laying out elements…'].map((label, index) => {
-              const s = { label, progress: (index + 1) * 33 };
-              const done = (GENERATION_STAGES.indexOf(s) < GENERATION_STAGES.indexOf(stage));
+            {GENERATION_STAGES.map((s, index) => {
+              const done = s.progress < stage.progress;
               const current = s.label === stage.label;
               return (
                 <li key={s.label} className="flex items-center gap-3">
@@ -126,6 +131,7 @@ export function GenerateModal({
             </Field>
           </div>
           <div className="mt-5 flex items-center justify-end gap-2">
+            {error && onTemplates && <Button variant="outline" onClick={onTemplates}>Use a template instead</Button>}
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
