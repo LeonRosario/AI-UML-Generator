@@ -40,6 +40,8 @@ const BASE_NODE_TYPES: NodeTypes = {
     'networkRouterNode','networkSwitchNode','networkFirewallNode','networkServerNode','networkClientNode','networkCloudNode',
     'archServerNode','archClientNode','archApiNode','archCacheNode','archQueueNode','archServiceNode','archGatewayNode','archCloudNode',
     'cloudComputeNode','cloudStorageNode','cloudNetworkNode','cloudMonitoringNode',
+    'enumerationNode','boundaryNode','controlNode','dataStoreNode','messageNode','returnMessageNode','selfMessageNode','createMessageNode','destroyMessageNode',
+    'commentNode','constraintNode','stereotypeNode','interactionNode','signalNode','portNode','processNode','externalEntityNode','dfdProcessNode','dataFlowNode',
   ].map((type) => [type, GeometryNode])),
 };
 
