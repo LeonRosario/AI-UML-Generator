@@ -4,6 +4,28 @@ import type { Node } from '@xyflow/react';
 import type { DiagramNodeData } from '@/types';
 import { cn } from '@/lib/cn';
 
+export function resolveTextStyle(data: Partial<DiagramNodeData> = {}): CSSProperties {
+  const textDecoration = data.underline && data.strikethrough
+    ? 'underline line-through'
+    : data.underline
+      ? 'underline'
+      : data.strikethrough
+        ? 'line-through'
+        : undefined;
+
+  return {
+    fontFamily: data.fontFamily ?? 'Inter, system-ui, sans-serif',
+    fontSize: typeof data.fontSize === 'number' ? `${data.fontSize}px` : undefined,
+    fontWeight: typeof data.fontWeight === 'number' ? data.fontWeight : undefined,
+    fontStyle: data.italic ? 'italic' : undefined,
+    textDecoration,
+    textAlign: data.textAlign ?? 'center',
+    letterSpacing: typeof data.letterSpacing === 'number' ? `${data.letterSpacing}px` : undefined,
+    lineHeight: typeof data.lineHeight === 'number' ? data.lineHeight : undefined,
+    color: data.textColor ?? '#0f172a',
+  };
+}
+
 export type EditorNodeProps = NodeProps<Node<DiagramNodeData>>;
 
 export function NodeHandles({ size = 'small' }: { size?: 'small' | 'large' }) {
@@ -39,8 +61,12 @@ export function nodeStyle(data: DiagramNodeData): CSSProperties {
     background: data.fill ?? '#ffffff',
     borderColor: data.borderColor ?? '#334155',
     borderWidth: typeof data.borderWidth === 'number' ? data.borderWidth : 1,
+    borderStyle: data.borderStyle ?? 'solid',
     borderRadius: radius,
     color: data.textColor ?? '#0f172a',
+    opacity: typeof data.opacity === 'number' ? data.opacity : undefined,
+    transform: typeof data.rotation === 'number' && data.rotation !== 0 ? `rotate(${data.rotation}deg)` : undefined,
+    transformOrigin: 'center center',
   };
 }
 
