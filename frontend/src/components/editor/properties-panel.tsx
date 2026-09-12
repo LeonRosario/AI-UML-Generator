@@ -239,6 +239,7 @@ function NodeInspector({ node }: { node: DiagramNode }) {
   const duplicateSelected = useEditorStore((s) => s.duplicateSelected);
 
   const data = node.data as DiagramNodeData;
+  const textStylePatch = (patch: Partial<DiagramNodeData>) => updateNodeStyle(node.id, patch as never);
   const nodeType = (data.nodeType as string) ?? node.type ?? 'rectangleNode';
   const classLike = ['classNode', 'interfaceNode', 'abstractClassNode', 'objectNode', 'packageNode'].includes(nodeType);
   const dbLike = ['databaseNode', 'entityNode'].includes(nodeType);
@@ -297,6 +298,65 @@ function NodeInspector({ node }: { node: DiagramNode }) {
           />
         </div>
       )}
+
+      <SectionTitle icon={Type}>Text</SectionTitle>
+      <div className="space-y-2 px-3 py-1">
+        <SubRow label="Font">
+          <Select value={String(data.fontFamily ?? 'Inter, system-ui, sans-serif')} onChange={(e) => textStylePatch({ fontFamily: e.target.value })} className="!h-7 !px-2 !text-[12px]">
+            <option value="Inter, system-ui, sans-serif">Inter</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+            <option value="'Courier New', monospace">Courier</option>
+          </Select>
+        </SubRow>
+        <div className="grid grid-cols-2 gap-2">
+          <SubRow label="Size">
+            <Input type="number" min={8} max={48} value={Number(data.fontSize ?? 12)} onChange={(e) => textStylePatch({ fontSize: Number(e.target.value) || 12 })} className="!h-7 !px-2 !text-[12px]" />
+          </SubRow>
+          <SubRow label="Weight">
+            <Select value={String(data.fontWeight ?? 500)} onChange={(e) => textStylePatch({ fontWeight: Number(e.target.value) || 500 })} className="!h-7 !px-2 !text-[12px]">
+              <option value={400}>Regular</option>
+              <option value={500}>Medium</option>
+              <option value={600}>Semibold</option>
+              <option value={700}>Bold</option>
+              <option value={800}>Heavy</option>
+            </Select>
+          </SubRow>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { key: 'bold', label: 'B', active: Number(data.fontWeight ?? 500) >= 600, on: () => textStylePatch({ fontWeight: Number(data.fontWeight ?? 500) >= 600 ? 500 : 700 }) },
+            { key: 'italic', label: 'I', active: !!data.italic, on: () => textStylePatch({ italic: !data.italic }) },
+            { key: 'underline', label: 'U', active: !!data.underline, on: () => textStylePatch({ underline: !data.underline }) },
+          ].map(({ key, label, active, on }) => (
+            <button key={key} type="button" onClick={on} className={cn('h-6 min-w-6 rounded border px-2 text-[11px] font-medium transition-colors', active ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <SubRow label="Align">
+            <div className="flex rounded-md border border-slate-200 bg-slate-50 p-0.5">
+              {(['left','center','right'] as const).map((align) => (
+                <button key={align} type="button" onClick={() => textStylePatch({ textAlign: align })} className={cn('flex-1 rounded px-1.5 py-1 text-[10px] uppercase tracking-wide', (data.textAlign ?? 'center') === align ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500')}>
+                  {align[0]}
+                </button>
+              ))}
+            </div>
+          </SubRow>
+          <SubRow label="Spacing">
+            <Input type="number" min={-4} max={12} step={0.5} value={Number(data.letterSpacing ?? 0)} onChange={(e) => textStylePatch({ letterSpacing: Number(e.target.value) || 0 })} className="!h-7 !px-2 !text-[12px]" />
+          </SubRow>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <SubRow label="Line h">
+            <Input type="number" min={0.8} max={3} step={0.1} value={Number(data.lineHeight ?? 1.2)} onChange={(e) => textStylePatch({ lineHeight: Number(e.target.value) || 1.2 })} className="!h-7 !px-2 !text-[12px]" />
+          </SubRow>
+          <SubRow label="Padding">
+            <Input type="number" min={0} max={40} value={Number(data.padding ?? 8)} onChange={(e) => textStylePatch({ padding: Number(e.target.value) || 0 })} className="!h-7 !px-2 !text-[12px]" />
+          </SubRow>
+        </div>
+      </div>
 
       <SectionTitle icon={SlidersHorizontal}>Style</SectionTitle>
       <ColorField label="Fill" value={(data.fill as string) ?? '#ffffff'} onChange={(fill) => stylePatch({ fill })} palette={COLORS} />
