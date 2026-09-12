@@ -10,7 +10,7 @@ import {
   type Visibility,
 } from '@/lib/editor/diagram-utils';
 import { useEditorStore } from '@/store/editor-store';
-import { EditorNodeShell, headerStyle, NodeHandles, nodeStyle } from './shared';
+import { EditorNodeShell, headerStyle, NodeHandles, nodeStyle, resolveTextStyle } from './shared';
 
 const MAX_ROWS = 14;
 
@@ -200,7 +200,7 @@ function ClassNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
         >
           <span
             className={cn('truncate font-mono text-[11px] leading-snug', key === 'methods' && 'italic')}
-            style={{ color: data.textColor ?? '#334155' }}
+            style={{ ...resolveTextStyle(data), color: data.textColor ?? '#334155' }}
           >
             {memberToString(row, key === 'attributes' ? 'attribute' : 'method')}
           </span>
@@ -268,7 +268,7 @@ function ClassNodeComponent({ id, data }: NodeProps<Node<DiagramNodeData>>) {
             className="w-full rounded border border-white/40 bg-white/10 px-1 py-0.5 text-center text-[13px] font-semibold outline-none"
           />
         ) : (
-          <div className="text-[13px] font-semibold leading-tight">{label}</div>
+          <div className="text-[13px] font-semibold leading-tight" style={resolveTextStyle(data)}>{label}</div>
         )}
       </div>
 
