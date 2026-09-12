@@ -35,6 +35,10 @@ export type EditorPreferences = {
   theme: 'classic' | 'ocean' | 'forest' | 'midnight';
 };
 
+export type TextAlign = 'left' | 'center' | 'right';
+export type VerticalAlign = 'top' | 'middle' | 'bottom';
+export type BorderStyle = 'solid' | 'dashed' | 'dotted';
+
 export type DiagramNodeData = {
   label: string;
   type: DiagramType;
@@ -47,7 +51,27 @@ export type DiagramNodeData = {
   imageSrc?: string;
   fill?: string;
   borderColor?: string;
+  borderStyle?: BorderStyle;
   textColor?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: number;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  textAlign?: TextAlign;
+  verticalAlign?: VerticalAlign;
+  textOffsetX?: number;
+  textOffsetY?: number;
+  padding?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  opacity?: number;
+  rotation?: number;
+  width?: number;
+  height?: number;
+  textWrap?: boolean;
+  autoSize?: boolean;
   borderWidth?: number;
   radius?: number;
   [key: string]: unknown;

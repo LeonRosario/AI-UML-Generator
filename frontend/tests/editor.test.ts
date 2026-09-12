@@ -6,6 +6,7 @@ import { createBlankDiagram, normalizeDiagram, parseDiagramJson, serializeDiagra
 import { projectPreset, scheduleTasks, validateGantt } from '../src/lib/editor/gantt';
 import { alignmentDelta } from '../src/lib/editor/alignment';
 import { EXTENDED_TEMPLATES } from '../src/data/extended-templates';
+import { resolveTextStyle } from '../src/components/editor/nodes/shared';
 
 const storage = new Map<string, string>();
 Object.defineProperty(globalThis, 'localStorage', { value: { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v), removeItem: (k: string) => storage.delete(k) } });
@@ -81,6 +82,29 @@ test('schedule edits push successors forward, preserve parallel tasks and reject
   next.tasks[0].dependencies = ['launch'];
   assert.throws(() => scheduleTasks(next.tasks), /cycles/);
   assert.throws(() => validateGantt({ tasks: [{ ...chart.tasks[0], start: '2026-02-30' }] }), /dates/);
+});
+
+test('text formatting metadata produces CSS-safe style values', () => {
+  assert.deepEqual(resolveTextStyle({
+    fontFamily: 'Arial',
+    fontSize: 18,
+    fontWeight: 700,
+    italic: true,
+    underline: true,
+    letterSpacing: 1.5,
+    lineHeight: 1.35,
+    textAlign: 'center',
+  }), {
+    color: '#0f172a',
+    fontFamily: 'Arial',
+    fontSize: '18px',
+    fontWeight: 700,
+    fontStyle: 'italic',
+    textDecoration: 'underline',
+    letterSpacing: '1.5px',
+    lineHeight: 1.35,
+    textAlign: 'center',
+  });
 });
 
 test('smart guides align the selection bounds without distorting relative positions', () => {
