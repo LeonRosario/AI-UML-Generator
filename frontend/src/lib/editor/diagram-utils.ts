@@ -12,12 +12,20 @@ import { autoLayout } from './layout-utils';
 
 export type Visibility = '+' | '-' | '#' | '~';
 
+export type MethodParameter = {
+  name: string;
+  type?: string;
+  defaultValue?: string;
+};
+
 export type MemberRow = {
   id: string;
   visibility: Visibility;
   name: string;
   type?: string;
+  defaultValue?: string;
   params?: string;
+  parameters?: MethodParameter[];
   returnType?: string;
 };
 
@@ -31,17 +39,70 @@ export function toVisibility(value: string | undefined, fallback: Visibility): V
   return isVisibility(value ?? '') ? (value as Visibility) : fallback;
 }
 
-const MEMBER_RE = /^([+#\-#~]?)\s*([A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*(?::\s*(.+))?$/;
+function splitParameterList(raw: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let depth = 0;
+  for (const char of raw) {
+    if (char === '(' || char === '[' || char === '{') depth += 1;
+    if (char === ')' || char === ']' || char === '}') depth = Math.max(0, depth - 1);
+    if (char === ',' && depth === 0) {
+      parts.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts.filter(Boolean);
+}
 
-export function parseMember(raw: string): { visibility: string; name: string; params?: string; type?: string } {
-  const match = MEMBER_RE.exec(raw.trim());
-  if (!match) return { visibility: raw.trim().charAt(0) || '+', name: raw.trim() };
-  const [, visibility, name, params, type] = match;
+const MEMBER_RE = /^([+#\-#~]?)\s*([A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*(?::\s*(.+?))?(?:\s*=\s*(.+))?$/;
+
+export function parseMember(raw: string): { visibility: string; name: string; params?: string; type?: string; defaultValue?: string; parameters?: MethodParameter[] } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { visibility: '+', name: '' };
+
+  const match = MEMBER_RE.exec(trimmed);
+  if (!match) return { visibility: trimmed.charAt(0) || '+', name: trimmed };
+
+  const [, visibility, name, paramsRaw, tail, defaultValue] = match;
+  const isMethod = paramsRaw !== undefined;
+
+  if (isMethod) {
+    const params = splitParameterList(paramsRaw).map((piece) => {
+      const eqIndex = piece.indexOf('=');
+      const valuePart = eqIndex >= 0 ? piece.slice(eqIndex + 1).trim() : undefined;
+      const proto = eqIndex >= 0 ? piece.slice(0, eqIndex).trim() : piece.trim();
+      const typeIndex = proto.lastIndexOf(':');
+      const name = typeIndex >= 0 ? proto.slice(0, typeIndex).trim() : proto.trim();
+      const type = typeIndex >= 0 ? proto.slice(typeIndex + 1).trim() : undefined;
+      return {
+        ...(name ? { name } : {}),
+        ...(type ? { type } : {}),
+        ...(valuePart ? { defaultValue: valuePart } : {}),
+      };
+    }).filter((param) => param.name);
+
+    return {
+      visibility: visibility || '+',
+      name: name || trimmed,
+      params: paramsRaw.trim(),
+      ...(params.length ? { parameters: params } : {}),
+      ...(tail ? { type: tail.trim() } : {}),
+      ...(defaultValue ? { defaultValue: defaultValue.trim() } : {}),
+    };
+  }
+
+  const typeMatch = /^([^=]+?)(?:\s*=\s*(.+))?$/.exec(tail ?? '');
+  const attributeType = typeMatch?.[1]?.trim();
+  const attributeDefaultValue = typeMatch?.[2]?.trim();
+
   return {
     visibility: visibility || '+',
-    name: name || raw.trim(),
-    ...(params !== undefined ? { params } : {}),
-    ...(type ? { type } : {}),
+    name: name || trimmed,
+    ...(attributeType ? { type: attributeType } : {}),
+    ...(attributeDefaultValue ? { defaultValue: attributeDefaultValue } : {}),
   };
 }
 
@@ -52,10 +113,15 @@ export function memberToRow(raw: string, kind: 'attribute' | 'method', index = 0
     visibility: toVisibility(parsed.visibility, kind === 'attribute' ? '-' : '+'),
     name: parsed.name,
     ...(kind === 'attribute'
-      ? parsed.type
-        ? { type: parsed.type }
-        : {}
-      : { ...(parsed.params ? { params: parsed.params } : {}), ...(parsed.type ? { returnType: parsed.type } : {}) }),
+      ? {
+          ...(parsed.type ? { type: parsed.type } : {}),
+          ...(parsed.defaultValue ? { defaultValue: parsed.defaultValue } : {}),
+        }
+      : {
+          ...(parsed.params ? { params: parsed.params } : {}),
+          ...(parsed.parameters ? { parameters: parsed.parameters } : {}),
+          ...(parsed.type ? { returnType: parsed.type } : {}),
+        }),
   };
 }
 
@@ -63,11 +129,20 @@ export function memberToString(row: MemberRow, kind: 'attribute' | 'method'): st
   const vis = VIS_SYMBOLS[row.visibility] ?? '+';
   if (kind === 'attribute') {
     const type = row.type?.trim();
-    return `${vis} ${row.name}${type ? `: ${type}` : ''}`.trim();
+    const defaultValue = row.defaultValue?.trim();
+    return `${vis} ${row.name}${type ? `: ${type}` : ''}${defaultValue ? ` = ${defaultValue}` : ''}`.trim();
   }
-  const params = row.params?.trim();
+
+  const paramsText = Array.isArray(row.parameters)
+    ? row.parameters.map((param) => {
+        const name = param.name ?? '';
+        const type = param.type ? `: ${param.type}` : '';
+        const defaultValue = param.defaultValue ? ` = ${param.defaultValue}` : '';
+        return `${name}${type}${defaultValue}`;
+      }).join(', ')
+    : (row.params ?? '').trim();
   const returnType = row.returnType?.trim();
-  return `${vis} ${row.name}(${params ?? ''})${returnType ? `: ${returnType}` : ''}`.trim();
+  return `${vis} ${row.name}(${paramsText})${returnType ? `: ${returnType}` : ''}`.trim();
 }
 
 export function normalizeMemberList(value: unknown, kind: 'attribute' | 'method'): MemberRow[] {
@@ -76,13 +151,27 @@ export function normalizeMemberList(value: unknown, kind: 'attribute' | 'method'
       if (typeof item === 'string') return memberToRow(item, kind);
       if (item && typeof item === 'object') {
         const row = item as Partial<MemberRow>;
+        const parameters = Array.isArray(row.parameters)
+          ? row.parameters.map((parameter) => ({
+              name: String(parameter.name ?? ''),
+              ...(parameter.type ? { type: String(parameter.type) } : {}),
+              ...(parameter.defaultValue ? { defaultValue: String(parameter.defaultValue) } : {}),
+            })).filter((parameter) => parameter.name)
+          : undefined;
         return {
           id: row.id ?? uid('mem'),
           visibility: toVisibility(row.visibility, kind === 'attribute' ? '-' : '+'),
           name: row.name ?? '',
-          ...(row.type ? { type: String(row.type) } : {}),
-          ...(row.params ? { params: String(row.params) } : {}),
-          ...(row.returnType ? { returnType: String(row.returnType) } : {}),
+          ...(kind === 'attribute'
+            ? {
+                ...(row.type ? { type: String(row.type) } : {}),
+                ...(row.defaultValue !== undefined ? { defaultValue: String(row.defaultValue) } : {}),
+              }
+            : {
+                ...(typeof row.params === 'string' && row.params.trim() ? { params: row.params.trim() } : {}),
+                ...(parameters ? { parameters } : {}),
+                ...(row.returnType ? { returnType: String(row.returnType) } : {}),
+              }),
         };
       }
       return memberToRow(String(item), kind);
