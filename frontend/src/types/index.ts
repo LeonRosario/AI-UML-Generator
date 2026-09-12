@@ -39,12 +39,18 @@ export type TextAlign = 'left' | 'center' | 'right';
 export type VerticalAlign = 'top' | 'middle' | 'bottom';
 export type BorderStyle = 'solid' | 'dashed' | 'dotted';
 
+export type MethodParameter = {
+  name: string;
+  type?: string;
+  defaultValue?: string;
+};
+
 export type DiagramNodeData = {
   label: string;
   type: DiagramType;
   nodeType?: string;
-  attributes?: string[] | Array<{ id: string; visibility: '+' | '-' | '#' | '~'; name: string; type?: string; params?: string; returnType?: string }>;
-  methods?: string[] | Array<{ id: string; visibility: '+' | '-' | '#' | '~'; name: string; type?: string; params?: string; returnType?: string }>;
+  attributes?: string[] | Array<{ id: string; visibility: '+' | '-' | '#' | '~'; name: string; type?: string; defaultValue?: string }>;
+  methods?: string[] | Array<{ id: string; visibility: '+' | '-' | '#' | '~'; name: string; parameters?: MethodParameter[]; params?: string; returnType?: string }>;
   fields?: string[];
   stereotype?: string;
   note?: string;
