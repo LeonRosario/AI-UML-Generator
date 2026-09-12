@@ -7,6 +7,7 @@ import { projectPreset, scheduleTasks, validateGantt } from '../src/lib/editor/g
 import { alignmentDelta } from '../src/lib/editor/alignment';
 import { EXTENDED_TEMPLATES } from '../src/data/extended-templates';
 import { resolveTextStyle } from '../src/components/editor/nodes/shared';
+import { memberToString, normalizeMemberList } from '../src/lib/editor/diagram-utils';
 
 const storage = new Map<string, string>();
 Object.defineProperty(globalThis, 'localStorage', { value: { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v), removeItem: (k: string) => storage.delete(k) } });
@@ -105,6 +106,21 @@ test('text formatting metadata produces CSS-safe style values', () => {
     lineHeight: 1.35,
     textAlign: 'center',
   });
+});
+
+test('class members preserve structured defaults and parameter metadata', () => {
+  const attributes = normalizeMemberList([
+    { id: 'attr-1', visibility: '+', name: 'age', type: 'int', defaultValue: '42' },
+    { id: 'attr-2', visibility: '-', name: 'password', type: 'String' },
+  ], 'attribute');
+  const methods = normalizeMemberList([
+    { id: 'method-1', visibility: '+', name: 'login', parameters: [{ name: 'user', type: 'String' }], returnType: 'void' },
+    { id: 'method-2', visibility: '#', name: 'calculateSalary', parameters: [{ name: 'base', type: 'double' }], returnType: 'double' },
+  ], 'method');
+
+  assert.equal(memberToString(attributes[0], 'attribute'), '+ age: int = 42');
+  assert.equal(memberToString(methods[0], 'method'), '+ login(user: String): void');
+  assert.equal(memberToString(methods[1], 'method'), '# calculateSalary(base: double): double');
 });
 
 test('smart guides align the selection bounds without distorting relative positions', () => {
