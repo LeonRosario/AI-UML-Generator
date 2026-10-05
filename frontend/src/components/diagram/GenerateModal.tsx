@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { AIActionButton } from '@/components/ui/ai-action-button';
 import { Field, Select, Textarea } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
@@ -135,9 +136,15 @@ export function GenerateModal({
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="accent" disabled={requirements.trim().length < 10} onClick={() => void run()}>
-              <Sparkles className="h-4 w-4" /> Generate Diagram
-            </Button>
+            <AIActionButton
+              variant="generate"
+              loading={generating}
+              loadingText="Generating..."
+              disabled={requirements.trim().length < 10}
+              onAction={run}
+            >
+              <Sparkles className="h-4 w-4" />
+            </AIActionButton>
           </div>
         </>
       )}
