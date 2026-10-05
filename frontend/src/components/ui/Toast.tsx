@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, Info, XCircle } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-type ToastKind = 'success' | 'error' | 'info';
+type ToastKind = 'success' | 'error' | 'info' | 'warning';
 type Toast = { id: number; kind: ToastKind; message: string };
 
 const ToastContext = createContext<(kind: ToastKind, message: string) => void>(() => {});
@@ -16,6 +16,7 @@ const icons: Record<ToastKind, ReactNode> = {
   success: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
   error: <XCircle className="h-4 w-4 text-red-500" />,
   info: <Info className="h-4 w-4 text-indigo-500" />,
+  warning: <Info className="h-4 w-4 text-amber-500" />,
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -43,6 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 t.kind === 'success' && 'border-emerald-100',
                 t.kind === 'error' && 'border-red-100',
                 t.kind === 'info' && 'border-slate-200',
+                t.kind === 'warning' && 'border-amber-100',
               )}
             >
               <span className="mt-0.5">{icons[t.kind]}</span>

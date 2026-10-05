@@ -78,7 +78,7 @@ export function parseMember(raw: string): { visibility: string; name: string; pa
       const name = typeIndex >= 0 ? proto.slice(0, typeIndex).trim() : proto.trim();
       const type = typeIndex >= 0 ? proto.slice(typeIndex + 1).trim() : undefined;
       return {
-        ...(name ? { name } : {}),
+        name: name || 'param',
         ...(type ? { type } : {}),
         ...(valuePart ? { defaultValue: valuePart } : {}),
       };
