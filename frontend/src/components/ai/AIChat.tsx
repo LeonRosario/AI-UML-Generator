@@ -1,18 +1,19 @@
 import { useMemo, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Send, Sparkles, User } from 'lucide-react';
+import { Bot, Send, Sparkles, User, Zap, MessageSquare } from 'lucide-react';
 import type { ChatMessage } from '@/types';
 import { aiExplainDiagram, aiModifyDiagram } from '@/lib/editor/api';
 import { useToast } from '@/components/ui/Toast';
 import type { Diagram } from '@/types';
+import { AIActionButton } from '@/components/ui/ai-action-button';
 
 const QUICK_ACTIONS_DATA = [
-  { label: 'Add Actor', prompt: 'Add an administrator actor who can manage students.' },
-  { label: 'Add Class', prompt: 'Add a Session class with startTime and endTime.' },
-  { label: 'Add Relationship', prompt: 'Connect Student to Course with a 1..* association.' },
-  { label: 'Explain Diagram', prompt: '__explain__' },
-  { label: 'Find Issues', prompt: '__issues__' },
-  { label: 'Improve Diagram', prompt: '__improve__' },
+  { label: 'Add Actor', prompt: 'Add an administrator actor who can manage students.', icon: User },
+  { label: 'Add Class', prompt: 'Add a Session class with startTime and endTime.', icon: Sparkles },
+  { label: 'Add Relationship', prompt: 'Connect Student to Course with a 1..* association.', icon: Zap },
+  { label: 'Explain Diagram', prompt: '__explain__', icon: MessageSquare },
+  { label: 'Find Issues', prompt: '__issues__', icon: MessageSquare },
+  { label: 'Improve Diagram', prompt: '__improve__', icon: Sparkles },
 ];
 
 export function AIChat({ diagram, collapsed, onDiagramChange }: { diagram: Diagram; collapsed: boolean; onDiagramChange?: (diagram: Diagram) => void }) {
@@ -135,12 +136,17 @@ export function AIChat({ diagram, collapsed, onDiagramChange }: { diagram: Diagr
                 key={a.label}
                 onClick={() => run(a.prompt)}
                 disabled={loading}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-50"
+                className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-50"
               >
+                {a.icon && <a.icon className="h-3 w-3" />}
                 {a.label}
               </button>
             ))}
           </div>
+        </div>
+        <div className="mb-3 flex items-center gap-2">
+          <AIActionButton variant="edit" loading={loading} loadingText="Updating..." disabled={loading} onAction={() => run(input.trim())} />
+          <AIActionButton variant="explain" loading={loading} loadingText="Explaining..." disabled={loading} onAction={() => run('__explain__')} />
         </div>
         <form
           onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
