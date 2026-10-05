@@ -19,6 +19,7 @@ import { relationshipLabel } from '@/lib/editor/edge-types';
 import { useEditorStore } from '@/store/editor-store';
 import { Field, Input, Select } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
+import { AIActionButton } from '@/components/ui/ai-action-button';
 import { cn } from '@/lib/cn';
 
 function SectionTitle({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
@@ -518,15 +519,13 @@ function DiagramInspector() {
       </div>
 
       <SectionTitle icon={LayoutGrid}>Auto Layout</SectionTitle>
-      <div className="flex items-center gap-2 px-3 py-1">
-        <Select value={layoutMode} onChange={(e) => setLayoutMode(e.target.value as typeof layoutMode)} className="!h-7 !px-2 !text-[12px]">
+      <div className="px-3 py-1">
+        <Select value={layoutMode} onChange={(e) => setLayoutMode(e.target.value as typeof layoutMode)} className="!h-7 !px-2 !text-[12px] w-full mb-2">
           <option value="hierarchical">Hierarchical</option>
           <option value="horizontal">Horizontal</option>
           <option value="vertical">Vertical</option>
         </Select>
-        <Button size="sm" variant="outline" onClick={() => applyAutoLayout(layoutMode)} disabled={nodes.length === 0}>
-          Apply
-        </Button>
+        <AIActionButton variant="layout" className="w-full" onAction={() => applyAutoLayout(layoutMode)} disabled={nodes.length === 0} />
       </div>
 
       <div className="px-3 py-3">
