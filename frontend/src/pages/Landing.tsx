@@ -19,6 +19,8 @@ import { Badge } from '@/components/ui/Badge';
 import { UMLDemo } from '@/components/marketing/UMLDemo';
 import { HowItWorks } from '@/components/ui/HowItWorks';
 import TextBlockAnimation from '@/components/ui/text-block-animation';
+import { ContainerScroll } from '@/components/ui/container-scroll-animation';
+import { UMLForgePreview } from '@/components/uml/UMLForgePreview';
 import { USE_CASE, DIAGRAMS_BY_TYPE, DIAGRAM_TYPE_LABELS } from '@/data/diagrams';
 import type { DiagramType } from '@/types';
 import { Logo } from '@/components/ui/Logo';
@@ -41,6 +43,49 @@ const features = [
 ];
 
 const diagramTabs: DiagramType[] = ['use-case', 'class', 'sequence', 'activity', 'er'];
+
+function ContainerScrollSection() {
+  return (
+    <section className="relative border-b border-slate-200 bg-white">
+      <ContainerScroll
+        cardHeight={620}
+        scrollHeight={2200}
+        titleComponent={
+          <div>
+            <TextBlockAnimation blockColor="#6366f1" animateOnScroll={false} delay={0.1} duration={0.8} stagger={0.03}>
+              <h2 className="text-balance text-3xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+                Transform Your Requirements
+                <br />
+                <span className="text-indigo-500">Into AI-Powered UML</span>
+              </h2>
+            </TextBlockAnimation>
+            <TextBlockAnimation blockColor="#a78bfa" delay={0.3} duration={0.6} stagger={0.04}>
+              <p className="mt-4 max-w-2xl mx-auto text-lg leading-relaxed text-slate-500">
+                A complete UML editor with AI generation, manual editing, relationships, formatting, and AI-assisted modifications.
+              </p>
+            </TextBlockAnimation>
+          </div>
+        }
+      >
+        <UMLForgePreview />
+      </ContainerScroll>
+
+      {/* CTA Below Animation */}
+      <div className="mx-auto mt-16 max-w-2xl text-center px-4">
+        <Link to="/app/projects">
+          <Button size="lg" className="w-full sm:w-auto">
+            Generate Your First UML <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+        <Link to="/app" className="mt-4 inline-block">
+          <Button size="lg" variant="outline">
+            Explore Editor
+          </Button>
+        </Link>
+      </div>
+    </section>
+  );
+}
 
 export function Landing() {
   useEffect(() => {
@@ -118,6 +163,9 @@ export function Landing() {
           </motion.div>
         </div>
       </section>
+
+      {/* ---------- Container Scroll Product Showcase ---------- */}
+      <ContainerScrollSection />
 
       {/* ---------- Features ---------- */}
       <section id="features" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
